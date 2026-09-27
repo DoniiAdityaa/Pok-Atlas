@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pokeatlas/ui/shared_widget/main_navigation.dart';
 import 'package:pokeatlas/config/service_locator.dart';
 import 'package:pokeatlas/ui/shared_widget/splash_screen.dart';
 import 'package:pokeatlas/ui/theme.dart';
@@ -19,11 +18,7 @@ class MyApp extends StatelessWidget {
       title: 'PokéAtlas',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/main': (context) => const MainNavigation(),
-      },
+      home: const SplashScreen(),
     );
   }
 }

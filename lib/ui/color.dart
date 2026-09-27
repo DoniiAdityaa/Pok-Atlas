@@ -1,11 +1,12 @@
 import 'dart:ui';
 
-/// Base color
-const Color primaryColor = Color(0xFF3DAFA5); // Hijau tosca dari gambar
-const Color primaryColor700 = Color(0xFF2E8A82); // Versi lebih gelap
-const Color secondaryColor = Color(0xFFfd5812);
-const Color errorColor = Color(0xFFff4542);
-const Color successColor = Color(0xFF21742b);
+/// Base color (PokéAtlas Design System)
+const Color primaryColor = Color(0xFF2563EB); // Royal Blue
+const Color primaryColor700 = Color(0xFF1D4ED8); // Darker Blue
+const Color primaryColor50 = Color(0xFFEFF6FF); // Light Blue tint
+const Color secondaryColor = Color(0xFFFD5812);
+const Color errorColor = Color(0xFFFF4542);
+const Color successColor = Color(0xFF22C55E);
 
 const Color shimmerColor = Color(0xFFB4B4B4);
 const Color shimmerHighlightColor = Color(0xFFFFFFFF);
@@ -176,10 +177,10 @@ const Color iconButtonDanger = Color(0xFFFFFFFF);
 const Color iconButtonSuccess = Color(0xFFFFFFFF);
 const Color iconButtonWarning = Color(0xFFFFFFFF);
 
-// Bg
-const Color bg = Color(0xFFFFFFFF);
+// Bg (PokéAtlas Design System)
+const Color bg = Color(0xFFF8FAFC); // Slate 50
 const Color bgLight = Color(0xFFFFFFFF);
-const Color bgDark = Color(0xFF0A0A0A);
+const Color bgDark = Color(0xFF0F172A); // Slate 900
 const Color bgSurfaceNeutralLight = Color(0xFFF5F5F5);
 const Color bgSurfaceNeutralDark = Color(0xFFEDEDED);
 const Color bgBlack = Color(0xFF18181B);
@@ -302,3 +303,68 @@ const Color sunglow600 = Color(0xFFcb8503);
 const Color sunglow700 = Color(0xFFa15e07);
 const Color sunglow800 = Color(0xFF854a0e);
 const Color sunglow900 = Color(0xFF713c12);
+
+/// Pokémon Type Colors (PokéAtlas Design System)
+class PokemonTypeColors {
+  static const Color normal = Color(0xFF94A3B8);
+  static const Color fire = Color(0xFFEF4444);
+  static const Color water = Color(0xFF3B82F6);
+  static const Color grass = Color(0xFF10B981);
+  static const Color electric = Color(0xFFF59E0B);
+  static const Color ice = Color(0xFF06B6D4);
+  static const Color fighting = Color(0xFFDC2626);
+  static const Color poison = Color(0xFFA855F7);
+  static const Color ground = Color(0xFFD97706);
+  static const Color flying = Color(0xFF818CF8);
+  static const Color psychic = Color(0xFFEC4899);
+  static const Color bug = Color(0xFF84CC16);
+  static const Color rock = Color(0xFF78716C);
+  static const Color ghost = Color(0xFF7C3AED);
+  static const Color dragon = Color(0xFF6366F1);
+  static const Color steel = Color(0xFF64748B);
+  static const Color fairy = Color(0xFFF472B6);
+  static const Color dark = Color(0xFF334155);
+
+  /// Resolves Pokémon type name to its official accent color
+  static Color getColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'fire':
+        return fire;
+      case 'water':
+        return water;
+      case 'grass':
+        return grass;
+      case 'electric':
+        return electric;
+      case 'ice':
+        return ice;
+      case 'fighting':
+        return fighting;
+      case 'poison':
+        return poison;
+      case 'ground':
+        return ground;
+      case 'flying':
+        return flying;
+      case 'psychic':
+        return psychic;
+      case 'bug':
+        return bug;
+      case 'rock':
+        return rock;
+      case 'ghost':
+        return ghost;
+      case 'dragon':
+        return dragon;
+      case 'steel':
+        return steel;
+      case 'fairy':
+        return fairy;
+      case 'dark':
+        return dark;
+      case 'normal':
+      default:
+        return normal;
+    }
+  }
+}
