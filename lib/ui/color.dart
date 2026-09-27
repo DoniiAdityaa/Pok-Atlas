@@ -367,4 +367,54 @@ class PokemonTypeColors {
         return normal;
     }
   }
+
+  /// Known type colors mapping for popular Pokémon by ID
+  static const Map<int, Color> knownTypeColors = {
+    1: grass,
+    2: grass,
+    3: grass,
+    4: fire,
+    5: fire,
+    6: fire,
+    7: water,
+    8: water,
+    9: water,
+    10: bug,
+    11: bug,
+    12: bug,
+    13: bug,
+    14: bug,
+    15: bug,
+    16: flying,
+    17: flying,
+    18: flying,
+    19: normal,
+    20: normal,
+    25: electric,
+    26: electric,
+    94: ghost,
+    133: normal,
+    150: psychic,
+  };
+
+  /// Resolves Pokémon ID to its official or harmonious accent color
+  static Color getColorById(int? id) {
+    if (id == null) return normal;
+    if (knownTypeColors.containsKey(id)) {
+      return knownTypeColors[id]!;
+    }
+    const palette = [
+      grass,
+      fire,
+      water,
+      electric,
+      psychic,
+      poison,
+      ground,
+      dragon,
+      ice,
+      fairy,
+    ];
+    return palette[(id - 1) % palette.length];
+  }
 }

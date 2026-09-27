@@ -2,9 +2,11 @@ import 'package:awesome_dio_interceptor/awesome_dio_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:pokeatlas/repository/pokemon_list/pokemon_list_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/api/api_service.dart';
+import '../features/home/cubit/home_cubit.dart';
 import 'constant.dart';
 
 /// Global [GetIt.instance].
@@ -51,6 +53,18 @@ Future<void> setUpLocator() async {
     () => ApiService(
       serviceLocator.get<Dio>(),
       baseUrl: baseApi,
+    ),
+  );
+
+  // Repositories
+  serviceLocator.registerLazySingleton<PokemonListRepository>(
+    () => PokemonListRepository(api: serviceLocator.get<ApiService>()),
+  );
+
+  // Cubits / BLoCs (Factory: instance baru tiap kali dipanggil/dibuka)
+  serviceLocator.registerFactory<HomeCubit>(
+    () => HomeCubit(
+      repository: serviceLocator.get<PokemonListRepository>(),
     ),
   );
 }
