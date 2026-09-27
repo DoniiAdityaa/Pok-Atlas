@@ -1,33 +1,47 @@
-const String productionPackageName = "com.example.learning_japanese";
-const String sandboxPackageName = "com.example.learning_japanese";
-const String appId = "6740189117";
+import 'package:pokeatlas/config/env/env.dart';
+
+/// App Config
+const String appName = "PokéAtlas";
+const String appVersion = "1.0.0";
 
 /// Network Config
-const String baseUrlProduction = "https://jepang.synertia.id";
-const String baseUrlSandbox = "https://jepang.synertia.id";
-const String baseSocketProduction = 'https://socket.pcctabessmg.xyz';
-const String baseSocketSandbox = 'https://socket.pcctabessmg.xyz';
-const String baseUrl = isProduction ? baseUrlProduction : baseUrlSandbox;
-const String baseSocket = isProduction ? baseSocketProduction : baseSocketSandbox;
-const String baseApi = "$baseUrl/apis/";
-const String baseApiV2 = "$baseUrl/apis/v2";
-const String baseImage = baseUrl;
-const String firebaseSecondaryApp = "secondary";
-const String playStoreUrl = 'https://play.google.com/store/apps/details?id=$productionPackageName';
-const String appStoreUrl = 'https://apps.apple.com/id/app/urbanstyle/id6740189117';
-const String deleteAccountUrl = "https://forms.gle/MAqxWapu3KqSE9eE7";
-const String notificationChannelId = "urban_style_default_channel";
-
-/// is production
-/// ALWAYS CHANGE THIS VALUE TO TRUE WHEN DEPLOYING TO PRODUCTION
-const bool isProduction = false;
-
-/// Int
-const int otpVerificationDurationInSeconds = 30;
+const String baseApi = Env.baseUrl;
 const int timeOutDuration = 30;
-const int successScreenDuration = 3;
+
+/// Pagination
+const int defaultPageSize = 20;
+const int initialOffset = 0;
+
+/// Cache Duration (in minutes)
+const int pokemonDetailCacheDuration = 60;
+const int typeListCacheDuration = 1440; // 24 hours
+
+/// Image config
 const double imageMaxHeight = 720;
 const double imageMaxWidth = 720;
 
-const int firebaseOtpVerificationDurationInSeconds = 120;
-const int whatsAppOtpVerificationDurationInSeconds = 300;
+/// API Endpoints
+class ApiEndpoints {
+  // Pokemon
+  static const String pokemon = '/pokemon';
+  static String pokemonDetail(dynamic id) => '/pokemon/$id';
+  
+  // Type
+  static const String type = '/type';
+  static String typeDetail(dynamic id) => '/type/$id';
+  
+  // Species
+  static String pokemonSpecies(int id) => '/pokemon-species/$id';
+  
+  // Evolution
+  static String evolutionChain(int id) => '/evolution-chain/$id';
+  
+  // Ability
+  static String ability(int id) => '/ability/$id';
+  
+  // Move
+  static String move(int id) => '/move/$id';
+  
+  // Generation
+  static String generation(int id) => '/generation/$id';
+}

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:pokeatlas/ui/shared_widget/main_navigation.dart';
+import 'package:pokeatlas/config/service_locator.dart';
 import 'package:pokeatlas/ui/shared_widget/splash_screen.dart';
 import 'package:pokeatlas/ui/theme.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await setUpLocator();
   runApp(const MyApp());
 }
 
