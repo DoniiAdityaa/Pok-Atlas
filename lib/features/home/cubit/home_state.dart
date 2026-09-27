@@ -18,27 +18,32 @@ final class HomeLoaded extends HomeState {
   final List<PokemonListItemModel> pokemonList;
   final bool hasReachedMax;
   final bool isLoadingMore;
+  final String selectedType;
 
   const HomeLoaded({
     required this.pokemonList,
     this.hasReachedMax = false,
     this.isLoadingMore = false,
+    this.selectedType = 'All',
   });
 
   HomeLoaded copyWith({
     List<PokemonListItemModel>? pokemonList,
     bool? hasReachedMax,
     bool? isLoadingMore,
+    String? selectedType,
   }) {
     return HomeLoaded(
       pokemonList: pokemonList ?? this.pokemonList,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      selectedType: selectedType ?? this.selectedType,
     );
   }
 
   @override
-  List<Object?> get props => [pokemonList, hasReachedMax, isLoadingMore];
+  List<Object?> get props =>
+      [pokemonList, hasReachedMax, isLoadingMore, selectedType];
 }
 
 /// Keadaan saat terjadi error saat mengambil data

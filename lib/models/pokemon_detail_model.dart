@@ -59,6 +59,20 @@ class PokemonDetailModel {
         'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
   }
 
+  /// Helper untuk mendapatkan URL gambar resmi versi Shiny
+  String get shinyOfficialImageUrl {
+    return sprites?.other?.officialArtwork?.frontShiny ??
+        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/$id.png';
+  }
+
+  /// Helper untuk URL animasi GIF pertempuran (Showdown)
+  String get battleGifUrl =>
+      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/$id.gif';
+
+  /// Helper untuk URL animasi GIF pertempuran versi Shiny
+  String get shinyBattleGifUrl =>
+      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/$id.gif';
+
   /// Helper tinggi dalam meter (PokéAPI menyimpan dalam desimeter, e.g. 7 = 0.7 m)
   double get heightInMeters => (height ?? 0) / 10.0;
 

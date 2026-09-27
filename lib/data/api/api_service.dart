@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:pokeatlas/models/pokemon_detail_model.dart';
 import 'package:pokeatlas/models/pokemon_list_model.dart';
+import 'package:pokeatlas/models/pokemon_type_response_model.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../config/constant.dart';
 
@@ -14,4 +16,14 @@ abstract class ApiService {
     @Query('limit') int limit = 20,
     @Query('offset') int offset = 0,
   });
+
+  @GET('/type/{name}')
+  Future<HttpResponse<PokemonTypeResponseModel>> getPokemonByType(
+    @Path('name') String name,
+  );
+
+  @GET('/pokemon/{idOrName}')
+  Future<HttpResponse<PokemonDetailModel>> getPokemonDetail(
+    @Path('idOrName') String idOrName,
+  );
 }

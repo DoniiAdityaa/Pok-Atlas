@@ -1,5 +1,6 @@
 import 'package:pokeatlas/data/api/api_service.dart';
 import 'package:pokeatlas/models/pokemon_list_model.dart';
+import 'package:pokeatlas/models/pokemon_type_response_model.dart';
 import 'package:pokeatlas/repository/base/base_repository.dart';
 import 'package:pokeatlas/utility/resource/data_state.dart';
 
@@ -14,5 +15,13 @@ class PokemonListRepository extends BaseRepository {
   }) async {
     return getStateOf<PokemonListModel>(
         request: () => api.getPokemonList(limit: limit, offset: offset));
+  }
+
+  Future<DataState<PokemonTypeResponseModel>> getPokemonByType(
+    String type,
+  ) async {
+    return getStateOf<PokemonTypeResponseModel>(
+      request: () => api.getPokemonByType(type.toLowerCase()),
+    );
   }
 }

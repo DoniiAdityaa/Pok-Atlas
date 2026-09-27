@@ -397,6 +397,56 @@ class PokemonTypeColors {
     150: psychic,
   };
 
+  /// Known types mapping for popular Pokémon by ID
+  static const Map<int, List<String>> knownTypes = {
+    1: ['Grass', 'Poison'],
+    2: ['Grass', 'Poison'],
+    3: ['Grass', 'Poison'],
+    4: ['Fire'],
+    5: ['Fire'],
+    6: ['Fire', 'Flying'],
+    7: ['Water'],
+    8: ['Water'],
+    9: ['Water'],
+    10: ['Bug'],
+    11: ['Bug'],
+    12: ['Bug', 'Flying'],
+    13: ['Bug', 'Poison'],
+    14: ['Bug', 'Poison'],
+    15: ['Bug', 'Poison'],
+    16: ['Normal', 'Flying'],
+    17: ['Normal', 'Flying'],
+    18: ['Normal', 'Flying'],
+    19: ['Normal'],
+    20: ['Normal'],
+    25: ['Electric'],
+    26: ['Electric'],
+    94: ['Ghost', 'Poison'],
+    133: ['Normal'],
+    150: ['Psychic'],
+  };
+
+  /// Resolves Pokémon ID to default type names
+  static List<String> getTypesById(int? id) {
+    if (id != null && knownTypes.containsKey(id)) {
+      return knownTypes[id]!;
+    }
+    const defaultTypes = [
+      ['Grass'],
+      ['Fire'],
+      ['Water'],
+      ['Electric'],
+      ['Psychic'],
+      ['Poison'],
+      ['Ground'],
+      ['Dragon'],
+      ['Ice'],
+      ['Fairy'],
+    ];
+    if (id == null || id <= 0) return ['Normal'];
+    return defaultTypes[(id - 1) % defaultTypes.length];
+  }
+
   /// Resolves Pokémon ID to its official or harmonious accent color
   static Color getColorById(int? id) {
     if (id == null) return normal;

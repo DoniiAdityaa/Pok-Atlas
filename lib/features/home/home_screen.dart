@@ -8,6 +8,7 @@ import '../../models/pokemon_list_model.dart';
 import '../../ui/color.dart';
 import '../../ui/pokemon_type_data.dart';
 import '../../ui/typography.dart';
+import '../detail/detail_screen.dart';
 import 'cubit/home_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -453,25 +454,22 @@ class HomeScreenState extends State<HomeScreen> {
                 right: 10,
                 bottom: -5,
                 top: 10,
-                child: Hero(
-                  tag: 'pokemon_${featured.id}',
-                  child: CachedNetworkImage(
-                    imageUrl: featured.imageUrl ?? '',
-                    width: 170,
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: bgLight,
-                        ),
+                child: CachedNetworkImage(
+                  imageUrl: featured.imageUrl ?? '',
+                  width: 170,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: bgLight,
                       ),
                     ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.broken_image, color: Colors.white70),
                   ),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.broken_image, color: Colors.white70),
                 ),
               ),
             ],
@@ -874,7 +872,18 @@ class HomeScreenState extends State<HomeScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => setState(() => _selectedType = typeItem.name),
+                    onTap: () {
+                      if (_selectedType == typeItem.name) return;
+                      setState(() => _selectedType = typeItem.name);
+                      context.read<HomeCubit>().filterByType(typeItem.name);
+                      if (_scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1161,7 +1170,13 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () => context.read<HomeCubit>().getPokemonList(),
+              onPressed: () {
+                if (_selectedType == 'All') {
+                  context.read<HomeCubit>().getPokemonList();
+                } else {
+                  context.read<HomeCubit>().filterByType(_selectedType);
+                }
+              },
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
@@ -1406,7 +1421,7 @@ class HomeScreenState extends State<HomeScreen> {
                         bottom: 4,
                         top: 4,
                         child: Hero(
-                          tag: 'pokemon_list_${pokemon.id}',
+                          tag: 'pokemon_${pokemon.id}',
                           child: CachedNetworkImage(
                             imageUrl: pokemon.imageUrl ?? '',
                             width: 100,
@@ -1716,27 +1731,24 @@ class HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
-                      child: Hero(
-                        tag: 'pokemon_${pokemon.id}',
-                        child: CachedNetworkImage(
-                          imageUrl: pokemon.imageUrl ?? '',
-                          height: 160,
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) => Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: typeColor,
-                              ),
+                      child: CachedNetworkImage(
+                        imageUrl: pokemon.imageUrl ?? '',
+                        height: 160,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: typeColor,
                             ),
                           ),
-                          errorWidget: (context, url, error) => const Icon(
-                            Icons.catching_pokemon,
-                            size: 48,
-                            color: black400,
-                          ),
+                        ),
+                        errorWidget: (context, url, error) => const Icon(
+                          Icons.catching_pokemon,
+                          size: 48,
+                          color: black400,
                         ),
                       ),
                     ),
@@ -1758,13 +1770,17 @@ class HomeScreenState extends State<HomeScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Menampilkan detail lengkap ${pokemon.capitalizedName}...',
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailScreen(
+                              pokemonIdOrName: pokemon.id?.toString() ?? pokemon.name ?? '6',
+                              initialPokemonId: pokemon.id ?? 6,
+                              initialName: pokemon.capitalizedName,
+                              initialImageUrl: pokemon.imageUrl,
+                              initialColor: typeColor,
+                              initialTypes: PokemonTypeColors.getTypesById(pokemon.id),
                             ),
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },

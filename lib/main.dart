@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pokeatlas/config/service_locator.dart';
+import 'package:pokeatlas/features/detail/cubit/detail_cubit.dart';
 import 'package:pokeatlas/features/home/cubit/home_cubit.dart';
-import 'package:pokeatlas/ui/shared_widget/splash_screen.dart';
+import 'package:pokeatlas/ui/shared_widget/main_navigation.dart';
 import 'package:pokeatlas/ui/theme.dart';
 
 void main() async {
@@ -20,13 +21,16 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (_) => serviceLocator<HomeCubit>()..getPokemonList(),
         ),
-        // Nanti bisa tambah Cubit lain di sini (ExploreCubit, FavoriteCubit, dll)
+        BlocProvider(
+          create: (_) => serviceLocator<DetailCubit>(),
+        ),
       ],
       child: MaterialApp(
         title: 'PokéAtlas',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const SplashScreen(),
+        // home: const SplashScreen(),
+        home: const MainNavigation(),
       ),
     );
   }
