@@ -1,0 +1,235 @@
+================================================================================
+  PokeAPI Comprehensive Test for PokéAtlas
+  Base URL: https://pokeapi.co/api/v2
+  Test Date: Sun Sep 27 08:47:10 WIB 2026
+================================================================================
+
+
+================================================================================
+  TEST 1: GET /pokemon - Pokemon List
+================================================================================
+
+1.1 Basic List (Default)
+Total Pokemon: 1351
+Next URL: https://pokeapi.co/api/v2/pokemon?offset=20&limit=20
+
+First 5 Pokemon:
+    "results": [
+        {
+            "name": "bulbasaur",
+
+1.2 List with Pagination (limit=5, offset=0)
+{
+    "count": 1351,
+    "next": "https://pokeapi.co/api/v2/pokemon?offset=5&limit=5",
+    "previous": null,
+    "results": [
+        {
+            "name": "bulbasaur",
+            "url": "https://pokeapi.co/api/v2/pokemon/1/"
+        },
+        {
+            "name": "ivysaur",
+            "url": "https://pokeapi.co/api/v2/pokemon/2/"
+        },
+        {
+            "name": "venusaur",
+            "url": "https://pokeapi.co/api/v2/pokemon/3/"
+        },
+        {
+            "name": "charmander",
+            "url": "https://pokeapi.co/api/v2/pokemon/4/"
+        },
+        {
+            "name": "charmeleon",
+            "url": "https://pokeapi.co/api/v2/pokemon/5/"
+        }
+    ]
+}
+
+Key Observations:
+- Total count: 1351 Pokemon available
+- Pagination support: limit & offset parameters
+- Each item: name + url for detail
+- Default limit: 20
+
+
+================================================================================
+  TEST 2: GET /pokemon/25 - Pikachu Detail
+================================================================================
+
+Basic Info:
+ID: 25
+Name: pikachu
+Height: 4 decimetres (0.4m)
+Weight: 60 hectograms (6.0kg)
+
+Types:
+  - electric (slot 1)
+
+Base Stats:
+  - hp: 35
+  - attack: 55
+  - defense: 40
+  - special-attack: 50
+  - special-defense: 50
+  - speed: 90
+
+Abilities:
+  - static
+  - lightning-rod (hidden)
+
+Sprites:
+  front_default: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png
+  front_shiny: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/25.png
+  official-artwork: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png
+
+Key Observations:
+- Complete Pokemon data available
+- Best image: sprites.other.official-artwork.front_default
+- Stats: 6 base stats (hp, attack, defense, sp-atk, sp-def, speed)
+- Types: array with slot (1=primary, 2=secondary)
+
+
+================================================================================
+  TEST 3: GET /type - Pokemon Types List
+================================================================================
+
+Available Types:
+  - normal
+  - fighting
+  - flying
+  - poison
+  - ground
+  - rock
+  - bug
+  - ghost
+  - steel
+  - fire
+  - water
+  - grass
+  - electric
+  - psychic
+  - ice
+  - dragon
+  - dark
+  - fairy
+  - stellar
+  - unknown
+
+
+================================================================================
+  TEST 4: GET /type/fire - Fire Type Detail
+================================================================================
+
+Fire Type Pokemon (first 10):
+Total: 109 Pokemon
+
+First 10:
+  1. charmander
+  2. charmeleon
+  3. charizard
+  4. vulpix
+  5. ninetales
+  6. growlithe
+  7. arcanine
+  8. ponyta
+  9. rapidash
+  10. magmar
+
+
+================================================================================
+  TEST 5: GET /pokemon-species/25 - Pikachu Species
+================================================================================
+
+Species Info:
+Generation: generation-i
+Evolution Chain: https://pokeapi.co/api/v2/evolution-chain/10/
+
+Description (English):
+  When several of
+these POKéMON
+gather, theirelectricity could
+build and cause
+lightning storms....
+
+
+================================================================================
+  TEST 6: GET /generation/1 - Generation I (Kanto)
+================================================================================
+
+Generation I Info:
+Name: generation-i
+Region: kanto
+Total Pokemon: 151
+
+First 10 Pokemon:
+  1. bulbasaur
+  2. ivysaur
+  3. venusaur
+  4. charmander
+  5. charmeleon
+  6. charizard
+  7. squirtle
+  8. wartortle
+  9. blastoise
+  10. caterpie
+
+
+================================================================================
+  SUMMARY & RECOMMENDATIONS
+================================================================================
+
+A. ENDPOINTS FOR MVP (Phase 1):
+   ✓ GET /pokemon?limit={n}&offset={n}  - List with pagination
+   ✓ GET /pokemon/{id}                   - Detail page
+   ✓ GET /type                           - Filter chips
+   ✓ GET /type/{id}                      - Filter by type
+
+B. ENDPOINTS FOR PHASE 2:
+   - GET /pokemon-species/{id}           - Generation, description
+   - GET /evolution-chain/{id}           - Evolution tree
+   - GET /ability/{id}                   - Ability detail
+   - GET /generation/{id}                - Filter by generation
+
+C. KEY DART MODELS NEEDED:
+   1. PokemonListResponse (count, next, previous, results)
+   2. PokemonListItem (name, url)
+   3. PokemonDetail (id, name, types, stats, sprites, abilities, etc)
+   4. PokemonType
+   5. PokemonStat
+   6. PokemonSprites
+   7. TypeListResponse
+   8. TypeDetail
+
+D. IMAGE STRATEGY:
+   - List cards: sprites.front_default
+   - Detail page: sprites.other.official-artwork.front_default
+   - Use CachedNetworkImage with placeholder
+
+E. PAGINATION STRATEGY:
+   - Initial load: limit=20, offset=0
+   - Load more: offset += 20
+   - Total available from response.count
+
+F. IMPLEMENTATION NOTES:
+   1. Use Dio for HTTP client
+   2. Retrofit for API generation
+   3. Repository pattern
+   4. Cubit for state management
+   5. Cache images with CachedNetworkImage
+   6. Local storage for favorites (SharedPreferences/Hive)
+
+G. NEXT STEPS:
+   1. Setup folder structure (features/pokemon/data/models)
+   2. Create Dart models with json_serializable
+   3. Setup Dio + Retrofit API service
+   4. Create repository
+   5. Implement PokemonListCubit & PokemonDetailCubit
+   6. Build UI (Explore + Detail pages)
+
+✨ API Test Completed! Ready for Flutter implementation.
+
+================================================================================
+  TEST COMPLETED
+================================================================================
