@@ -16,12 +16,14 @@ final class HomeLoading extends HomeState {}
 /// Keadaan saat data Pokémon berhasil didapat
 final class HomeLoaded extends HomeState {
   final List<PokemonListItemModel> pokemonList;
+  final List<PokemonListItemModel> allDirectory;
   final bool hasReachedMax;
   final bool isLoadingMore;
   final String selectedType;
 
   const HomeLoaded({
     required this.pokemonList,
+    this.allDirectory = const [],
     this.hasReachedMax = false,
     this.isLoadingMore = false,
     this.selectedType = 'All',
@@ -29,12 +31,14 @@ final class HomeLoaded extends HomeState {
 
   HomeLoaded copyWith({
     List<PokemonListItemModel>? pokemonList,
+    List<PokemonListItemModel>? allDirectory,
     bool? hasReachedMax,
     bool? isLoadingMore,
     String? selectedType,
   }) {
     return HomeLoaded(
       pokemonList: pokemonList ?? this.pokemonList,
+      allDirectory: allDirectory ?? this.allDirectory,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       selectedType: selectedType ?? this.selectedType,
@@ -43,7 +47,7 @@ final class HomeLoaded extends HomeState {
 
   @override
   List<Object?> get props =>
-      [pokemonList, hasReachedMax, isLoadingMore, selectedType];
+      [pokemonList, allDirectory, hasReachedMax, isLoadingMore, selectedType];
 }
 
 /// Keadaan saat terjadi error saat mengambil data

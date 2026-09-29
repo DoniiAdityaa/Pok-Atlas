@@ -9,12 +9,31 @@ class PokemonListRepository extends BaseRepository {
 
   PokemonListRepository({required this.api});
 
+  List<PokemonListItemModel> _allPokemonDirectory = [];
+
   Future<DataState<PokemonListModel>> getPokemonList({
     int limit = 20,
     int offset = 0,
   }) async {
     return getStateOf<PokemonListModel>(
         request: () => api.getPokemonList(limit: limit, offset: offset));
+  }
+
+  /// Mengambil direktori lengkap seluruh 1025 Pokémon untuk pencarian global instan
+  Future<List<PokemonListItemModel>> getAllPokemonDirectory() async {
+    if (_allPokemonDirectory.isNotEmpty) {
+      return _allPokemonDirectory;
+    }
+
+    final result = await getStateOf<PokemonListModel>(
+      request: () => api.getPokemonList(limit: 1025, offset: 0),
+    );
+
+    if (result is DataStateSuccess && result.data?.results != null) {
+      _allPokemonDirectory = result.data!.results!;
+    }
+
+    return _allPokemonDirectory;
   }
 
   Future<DataState<PokemonTypeResponseModel>> getPokemonByType(

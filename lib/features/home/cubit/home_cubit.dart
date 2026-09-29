@@ -16,8 +16,11 @@ class HomeCubit extends Cubit<HomeState> {
 
   // Cache untuk list 'All' agar saat kembali ke tab 'All' tidak perlu fetch ulang
   List<PokemonListItemModel> _allPokemonList = [];
+  List<PokemonListItemModel> _allDirectory = [];
   bool _allHasReachedMax = false;
   String _currentType = 'All';
+
+  List<PokemonListItemModel> get allDirectory => _allDirectory;
 
   /// Memanggil batch pertama Pokémon (20 data pertama)
   Future<void> getPokemonList() async {
@@ -39,12 +42,37 @@ class HomeCubit extends Cubit<HomeState> {
 
       emit(HomeLoaded(
         pokemonList: list,
+        allDirectory: _allDirectory,
         hasReachedMax: hasReachedMax,
         selectedType: 'All',
       ));
     } else {
-      emit(HomeError(result.message ?? 'Gagal memuat data Pokémon'));
+      emit(HomeError(result.message ?? 'Failed to load Pokémon data'));
     }
+  }
+
+  bool _isLoadingDirectory = false;
+
+  /// Memuat direktori seluruh 1025 Pokémon secara malas (Lazy Loading On-Demand).
+  /// Hanya dipanggil saat user menyentuh kolom pencarian atau menekan tombol dadu acak.
+  Future<List<PokemonListItemModel>> ensureDirectoryLoaded() async {
+    if (_allDirectory.isNotEmpty) return _allDirectory;
+    if (_isLoadingDirectory) return _allDirectory;
+
+    _isLoadingDirectory = true;
+    try {
+      final dir = await repository.getAllPokemonDirectory();
+      if (dir.isNotEmpty) {
+        _allDirectory = dir;
+        final currentState = state;
+        if (currentState is HomeLoaded) {
+          emit(currentState.copyWith(allDirectory: dir));
+        }
+      }
+    } finally {
+      _isLoadingDirectory = false;
+    }
+    return _allDirectory;
   }
 
   /// Memuat Pokémon berikutnya saat di-scroll ke bawah (Infinite Scroll)
@@ -72,6 +100,7 @@ class HomeCubit extends Cubit<HomeState> {
 
       emit(currentState.copyWith(
         pokemonList: _allPokemonList,
+        allDirectory: _allDirectory,
         hasReachedMax: hasReachedMax,
         isLoadingMore: false,
       ));
@@ -89,6 +118,7 @@ class HomeCubit extends Cubit<HomeState> {
       if (_allPokemonList.isNotEmpty) {
         emit(HomeLoaded(
           pokemonList: _allPokemonList,
+          allDirectory: _allDirectory,
           hasReachedMax: _allHasReachedMax,
           selectedType: 'All',
         ));
@@ -112,11 +142,12 @@ class HomeCubit extends Cubit<HomeState> {
 
       emit(HomeLoaded(
         pokemonList: list,
+        allDirectory: _allDirectory,
         hasReachedMax: true,
         selectedType: type,
       ));
     } else {
-      emit(HomeError(result.message ?? 'Gagal memuat Pokémon tipe $type'));
+      emit(HomeError(result.message ?? 'Failed to load $type type Pokémon'));
     }
   }
 }
