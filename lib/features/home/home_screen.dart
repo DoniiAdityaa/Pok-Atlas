@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../config/service_locator.dart';
+import '../../data/api/api_service.dart';
+import '../../models/pokemon_detail_model.dart';
 import '../../models/pokemon_list_model.dart';
 import '../../ui/color.dart';
 import '../../ui/pokemon_type_data.dart';
@@ -30,6 +33,10 @@ class HomeScreenState extends State<HomeScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   late final ScrollController _scrollController;
 
+  // Random featured Pokémon state — fetched live from API
+  PokemonDetailModel? _featuredPokemon;
+  bool _featuredLoading = true;
+
   Color _getPokemonAccentColor(int id) => PokemonTypeColors.getColorById(id);
 
   @override
@@ -42,12 +49,34 @@ class HomeScreenState extends State<HomeScreen> {
         context.read<HomeCubit>().ensureDirectoryLoaded();
       }
     });
+    _fetchRandomFeatured();
+  }
+
+  /// Fetch a random Pokémon from PokeAPI (ID 1–1010) for the daily featured banner.
+  /// Uses the date as a seed so the Pokémon stays the same all day and only changes tomorrow.
+  Future<void> _fetchRandomFeatured() async {
+    final now = DateTime.now();
+    final daySeed = now.year * 10000 + now.month * 100 + now.day;
+    final randomId = Random(daySeed).nextInt(1010) + 1;
+    try {
+      final response = await serviceLocator
+          .get<ApiService>()
+          .getPokemonDetail(randomId.toString());
+      if (mounted) {
+        setState(() {
+          _featuredPokemon = response.data;
+          _featuredLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _featuredLoading = false);
+    }
   }
 
   void _onScroll() {
     if (_scrollController.hasClients &&
         _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 250) {
+            _scrollController.position.maxScrollExtent - 450) {
       context.read<HomeCubit>().loadMorePokemon();
     }
   }
@@ -60,6 +89,17 @@ class HomeScreenState extends State<HomeScreen> {
         _favoriteIds.add(id);
       }
     });
+  }
+
+  /// Animasi scroll kembali ke puncak halaman secara halus saat tab PokéDex ditekan ulang
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -132,81 +172,90 @@ class HomeScreenState extends State<HomeScreen> {
           color: primaryColor,
           backgroundColor: bgLight,
           onRefresh: () => context.read<HomeCubit>().getPokemonList(),
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels >=
+                  scrollInfo.metrics.maxScrollExtent - 450) {
+                context.read<HomeCubit>().loadMorePokemon();
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
+                // 1. Explorer Header
+                SliverToBoxAdapter(
+                  child: _buildHeader(),
+                ),
+                // 3. Featured Hero Card
+                SliverToBoxAdapter(
+                  child: _buildFeaturedCard(),
+                ),
+                // 4. Blok (Evolution & Compare)
+                SliverToBoxAdapter(
+                  child: _buildPokeTools(),
+                ),
+
+                // 4. Element Type Filter Bar
+                SliverToBoxAdapter(
+                  child: _buildTypeFilterBar(),
+                ),
+
+                SliverToBoxAdapter(
+                  child: _buildSearchBar(),
+                ),
+
+                // 5. Section Title: Pokémon List (Synced with Cubit State)
+                BlocBuilder<HomeCubit, HomeState>(
+                  builder: (context, state) {
+                    int count = 0;
+                    if (state is HomeLoaded) {
+                      count = _filterPokemonList(
+                        state.pokemonList,
+                        allDirectory: state.allDirectory,
+                      ).length;
+                    }
+                    return SliverToBoxAdapter(
+                      child: _buildSectionTitle(
+                        title: _selectedType == 'All'
+                            ? ''
+                            : '$_selectedType Pokémon',
+                        count: count,
+                      ),
+                    );
+                  },
+                ),
+
+                // 6. 2-Column Pokémon Cards Grid / Shimmer / Error
+                BlocBuilder<HomeCubit, HomeState>(
+                  builder: (context, state) {
+                    if (state is HomeLoading) {
+                      return _buildShimmerGrid();
+                    } else if (state is HomeError) {
+                      return _buildErrorState(state.message);
+                    } else if (state is HomeLoaded) {
+                      final filtered = _filterPokemonList(
+                        state.pokemonList,
+                        allDirectory: state.allDirectory,
+                      );
+                      return _buildPokemonGrid(
+                        pokemons: filtered,
+                        isLoadingMore: state.isLoadingMore,
+                      );
+                    }
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  },
+                ),
+
+                // Bottom Spacing for Floating Navigation Bar
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 100),
+                ),
+              ],
             ),
-            slivers: [
-              // 1. Explorer Header
-              SliverToBoxAdapter(
-                child: _buildHeader(),
-              ),
-              // 3. Featured Hero Card
-              SliverToBoxAdapter(
-                child: _buildFeaturedCard(),
-              ),
-              // 4. Blok (Evolution & Compare)
-              SliverToBoxAdapter(
-                child: _buildPokeTools(),
-              ),
-
-              // 4. Element Type Filter Bar
-              SliverToBoxAdapter(
-                child: _buildTypeFilterBar(),
-              ),
-
-              SliverToBoxAdapter(
-                child: _buildSearchBar(),
-              ),
-
-              // 5. Section Title: Pokémon List (Synced with Cubit State)
-              BlocBuilder<HomeCubit, HomeState>(
-                builder: (context, state) {
-                  int count = 0;
-                  if (state is HomeLoaded) {
-                    count = _filterPokemonList(
-                      state.pokemonList,
-                      allDirectory: state.allDirectory,
-                    ).length;
-                  }
-                  return SliverToBoxAdapter(
-                    child: _buildSectionTitle(
-                      title: _selectedType == 'All'
-                          ? 'Explore Pokémon'
-                          : '$_selectedType Pokémon',
-                      count: count,
-                    ),
-                  );
-                },
-              ),
-
-              // 6. 2-Column Pokémon Cards Grid / Shimmer / Error
-              BlocBuilder<HomeCubit, HomeState>(
-                builder: (context, state) {
-                  if (state is HomeLoading) {
-                    return _buildShimmerGrid();
-                  } else if (state is HomeError) {
-                    return _buildErrorState(state.message);
-                  } else if (state is HomeLoaded) {
-                    final filtered = _filterPokemonList(
-                      state.pokemonList,
-                      allDirectory: state.allDirectory,
-                    );
-                    return _buildPokemonGrid(
-                      pokemons: filtered,
-                      isLoadingMore: state.isLoadingMore,
-                    );
-                  }
-                  return const SliverToBoxAdapter(child: SizedBox.shrink());
-                },
-              ),
-
-              // Bottom Spacing for Floating Navigation Bar
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
           ),
         ),
       ),
@@ -370,11 +419,7 @@ class HomeScreenState extends State<HomeScreen> {
                       setState(() => _searchQuery = '');
                     },
                   )
-                : Icon(
-                    Icons.tune_rounded,
-                    color: isFocused ? primaryColor : black400,
-                    size: 20,
-                  ),
+                : null,
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -389,120 +434,212 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Banner Hero Pokémon of the Day (Charizard)
+  /// Banner Pokémon of the Session — random, fetched live from API
   Widget _buildFeaturedCard() {
-    const featured = PokemonListItemModel(
-      name: 'charizard',
-      url: 'https://pokeapi.co/api/v2/pokemon/6/',
-    );
+    if (_selectedType != 'All' || _searchController.text.trim().isNotEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Loading shimmer state
+    if (_featuredLoading) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            height: 190,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(28),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // No data / error state — silently hide
+    if (_featuredPokemon == null) return const SizedBox.shrink();
+
+    final pokemon = _featuredPokemon!;
+    final types = pokemon.typeNames;
+    final primaryType = types.isNotEmpty ? types.first : 'Normal';
+    final secondaryType = types.length > 1 ? types[1] : primaryType;
+    final primaryColor = PokemonTypeColors.getColor(primaryType);
+    final secondaryColor = PokemonTypeColors.getColor(secondaryType);
+    final imageUrl = pokemon.officialImageUrl;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: InkWell(
-        onTap: () => _showPokemonItemQuickDetails(featured),
-        borderRadius: BorderRadius.circular(24),
+        onTap: () => _showPokemonItemQuickDetails(pokemon.toListItem),
+        borderRadius: BorderRadius.circular(28),
         child: Container(
-          height: 180,
+          height: 190,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
+            borderRadius: BorderRadius.circular(28),
+            // Vibrant elemental gradient from real type colors
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                PokemonTypeColors.fire,
-                orange700,
+                primaryColor.withValues(alpha: 0.95),
+                Color.alphaBlend(
+                  secondaryColor.withValues(alpha: 0.80),
+                  primaryColor,
+                ),
+                secondaryColor,
               ],
+              stops: const [0.0, 0.55, 1.0],
             ),
             boxShadow: [
               BoxShadow(
-                color: PokemonTypeColors.fire.withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: primaryColor.withValues(alpha: 0.38),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+                spreadRadius: -2,
               ),
             ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // Background Pokéball Watermark Motif
+              // 1. Large translucent Pokéball ring — bottom-right anchor
               Positioned(
-                right: -30,
-                bottom: -35,
-                child: Opacity(
-                  opacity: 0.15,
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: bgLight,
+                right: -50,
+                bottom: -55,
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      width: 22,
+                    ),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 75,
+                      height: 75,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.16),
+                          width: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              // Content Info (Left Side)
+              // 2. Diagonal shimmer sweep
+              Positioned(
+                left: -40,
+                top: -40,
+                child: Transform.rotate(
+                  angle: 0.55,
+                  child: Container(
+                    width: 200,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withValues(alpha: 0.13),
+                          Colors.transparent,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 3. Soft radial spotlight
+              Positioned(
+                left: -30,
+                top: -10,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.12),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 4. Content — Left Column
               Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Badge: Featured of the day
+                    // Type label pill badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: bgLight.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
+                        horizontal: 10,
+                        vertical: 4,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('🔥', style: xsRegular),
-                          const SizedBox(width: 4),
-                          Text(
-                            'FEATURED TODAY',
-                            style: xxsBold.copyWith(
-                              color: black00,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ],
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'FEATURED POKÉMON',
+                        style: xxsBold.copyWith(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          letterSpacing: 1.2,
+                          fontSize: 9,
+                        ),
                       ),
                     ),
 
-                    // Pokémon Name & ID
+                    // Pokédex ID + Name
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          featured.formattedId,
-                          style: xsSemiBold.copyWith(
-                            color: black00.withValues(alpha: 0.8),
+                          pokemon.formattedId,
+                          style: xxsBold.copyWith(
+                            color: Colors.white.withValues(alpha: 0.70),
+                            letterSpacing: 1.5,
+                            fontSize: 11,
                           ),
                         ),
+                        const SizedBox(height: 1),
                         Text(
-                          featured.capitalizedName,
+                          pokemon.capitalizedName,
                           style: lBold.copyWith(
-                            fontSize: 24,
-                            color: black00,
-                            letterSpacing: -0.5,
+                            fontSize: 28,
+                            color: Colors.white,
+                            letterSpacing: -0.8,
+                            height: 1.05,
                           ),
                         ),
                       ],
                     ),
 
-                    // Type Chips
+                    // Real type chips from API
                     Row(
-                      children: const ['Fire', 'Flying'].map((type) {
+                      children: types.map((type) {
                         return _buildTypeBadge(
                           type,
                           isLightBackground: false,
-                          iconSize: 13,
+                          iconSize: 12,
                           fontSize: 11,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3.5),
+                            horizontal: 10,
+                            vertical: 3.5,
+                          ),
                           margin: const EdgeInsets.only(right: 6),
                         );
                       }).toList(),
@@ -511,27 +648,27 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Pokémon Artwork popping out (Right Side)
+              // 5. Official artwork — pops from right
               Positioned(
-                right: 10,
-                bottom: -5,
-                top: 10,
+                right: 0,
+                bottom: -8,
+                top: 4,
                 child: CachedNetworkImage(
-                  imageUrl: featured.imageUrl ?? '',
-                  width: 170,
+                  imageUrl: imageUrl,
+                  width: 178,
                   fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
+                  placeholder: (context, url) => Center(
                     child: SizedBox(
-                      width: 24,
-                      height: 24,
+                      width: 26,
+                      height: 26,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: bgLight,
+                        strokeWidth: 2.2,
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
                   errorWidget: (context, url, error) =>
-                      const Icon(Icons.broken_image, color: Colors.white70),
+                      const Icon(Icons.broken_image, color: Colors.white54),
                 ),
               ),
             ],
@@ -541,7 +678,6 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // kotak kembar (Twin bento tiles) Evolution Tree & Compare Arena
   // Poké Tools: Row(Evolution, Compare) + Banner Horizontal(Generation Explorer)
   Widget _buildPokeTools() {
     return Column(
@@ -1323,17 +1459,30 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           ),
         if (isLoadingMore)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.0),
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
               child: Center(
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: primaryColor,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Catching more Pokémon...',
+                      style: smMedium.copyWith(
+                        color: black500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'pokemon_list_model.dart';
 
 part 'pokemon_detail_model.g.dart';
 
@@ -50,6 +51,14 @@ class PokemonDetailModel {
   String get capitalizedName {
     if (name == null || name!.isEmpty) return '';
     return name![0].toUpperCase() + name!.substring(1);
+  }
+
+  /// Helper untuk konversi ke [PokemonListItemModel] (misal untuk quick preview / navigasi)
+  PokemonListItemModel get toListItem {
+    return PokemonListItemModel(
+      name: name,
+      url: 'https://pokeapi.co/api/v2/pokemon/$id/',
+    );
   }
 
   /// Helper untuk mendapatkan URL gambar resmi (official artwork)

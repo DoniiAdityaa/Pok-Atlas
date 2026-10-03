@@ -77,8 +77,8 @@ class HomeCubit extends Cubit<HomeState> {
 
   /// Memuat Pokémon berikutnya saat di-scroll ke bawah (Infinite Scroll)
   Future<void> loadMorePokemon() async {
-    // Jika sedang dalam filter tipe tertentu, semua pokemon tipe tersebut sudah dimuat
-    if (_currentType != 'All') return;
+    // Jika sedang dalam filter tipe tertentu selain 'All', jangan fetch
+    if (_currentType.toLowerCase() != 'all') return;
 
     final currentState = state;
     if (currentState is! HomeLoaded) return;
@@ -115,6 +115,7 @@ class HomeCubit extends Cubit<HomeState> {
 
     // Jika pilih 'All', langsung restore dari cache list All jika ada
     if (type.toLowerCase() == 'all') {
+      _currentType = 'All';
       if (_allPokemonList.isNotEmpty) {
         emit(HomeLoaded(
           pokemonList: _allPokemonList,

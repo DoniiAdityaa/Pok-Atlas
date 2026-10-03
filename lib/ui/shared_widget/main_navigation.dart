@@ -37,6 +37,7 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   MainTab _currentTab = MainTab.home;
   final _pageController = PageController();
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
   static const List<_NavItemData> _navItems = [
     _NavItemData(
@@ -76,7 +77,13 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _onTabSelected(MainTab tab) {
-    if (_currentTab == tab) return;
+    if (_currentTab == tab) {
+      // Re-tap pada tab aktif: scroll kembali ke puncak halaman secara halus
+      if (tab == MainTab.home) {
+        _homeKey.currentState?.scrollToTop();
+      }
+      return;
+    }
     setState(() => _currentTab = tab);
     _pageController.jumpToPage(tab.index);
   }
@@ -90,7 +97,7 @@ class _MainNavigationState extends State<MainNavigation> {
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          const HomeScreen(),
+          HomeScreen(key: _homeKey),
           _buildExplorePlaceholder(),
           _buildFavoritesPlaceholder(),
           _buildSettingsPlaceholder(),
