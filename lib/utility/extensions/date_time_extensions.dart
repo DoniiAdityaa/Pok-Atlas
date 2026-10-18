@@ -62,7 +62,8 @@ extension DateTimeExtensions on DateTime {
   }
 
   DateTime addMonths(int months) {
-    return DateTime(year, month + months, day, hour, minute, second, millisecond, microsecond);
+    return DateTime(year, month + months, day, hour, minute, second,
+        millisecond, microsecond);
   }
 
   DateTime getFirstDateOfMonth() {
@@ -79,8 +80,8 @@ extension DateTimeExtensions on DateTime {
   }
 
   DateTime add7Hours() {
-    if (this.isUtc) {
-      return this.add(Duration(hours: 7)).toLocal();
+    if (isUtc) {
+      return add(Duration(hours: 7)).toLocal();
     }
     return this;
   }

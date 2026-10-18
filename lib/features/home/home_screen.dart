@@ -9,8 +9,10 @@ import '../../data/api/api_service.dart';
 import '../../models/pokemon_detail_model.dart';
 import '../../models/pokemon_list_model.dart';
 import '../../ui/color.dart';
-import '../../ui/pokemon_type_data.dart';
+import '../../ui/shared_widget/pokemon_search_bar.dart';
+import '../../ui/shared_widget/pokemon_type_filter_bar.dart';
 import '../../ui/typography.dart';
+import '../compare/compare_screen.dart';
 import '../detail/detail_screen.dart';
 import 'cubit/home_cubit.dart';
 
@@ -364,73 +366,21 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Search Bar interaktif dengan clear action & rounded border presisi
+  /// Search Bar interaktif dengan reusable PokemonSearchBar
   Widget _buildSearchBar() {
-    final isFocused = _searchFocusNode.hasFocus;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 52,
-        decoration: BoxDecoration(
-          color: bgLight,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: isFocused ? primaryColor : borderNeutral,
-            width: isFocused ? 1.5 : 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isFocused
-                  ? primaryColor.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.03),
-              blurRadius: isFocused ? 14 : 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchController,
-          focusNode: _searchFocusNode,
-          onChanged: (value) {
-            setState(() => _searchQuery = value);
-            if (value.isNotEmpty) {
-              context.read<HomeCubit>().ensureDirectoryLoaded();
-            }
-          },
-          style: smMedium.copyWith(color: bgDark),
-          decoration: InputDecoration(
-            hintText: 'Search Pokémon',
-            hintStyle: smRegular.copyWith(
-              fontSize: 13.5,
-              color: black400,
-            ),
-            prefixIcon: Icon(
-              Icons.search,
-              color: isFocused ? primaryColor : black500,
-              size: 22,
-            ),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18, color: black400),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            disabledBorder: InputBorder.none,
-            errorBorder: InputBorder.none,
-            focusedErrorBorder: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          ),
-        ),
-      ),
+    return PokemonSearchBar(
+      controller: _searchController,
+      focusNode: _searchFocusNode,
+      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      onChanged: (value) {
+        setState(() => _searchQuery = value);
+        if (value.isNotEmpty) {
+          context.read<HomeCubit>().ensureDirectoryLoaded();
+        }
+      },
+      onClear: () {
+        setState(() => _searchQuery = '');
+      },
     );
   }
 
@@ -736,17 +686,10 @@ class HomeScreenState extends State<HomeScreen> {
                         PokemonTypeColors.fighting,
                       ],
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '⚔️ Compare Pokémon coming soon!',
-                              style: xsMedium.copyWith(color: black00),
-                            ),
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CompareScreen(),
                           ),
                         );
                       },
@@ -1042,103 +985,25 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// Baris filter elemen tipe (Fire, Water, Grass, dll.)
   Widget _buildTypeFilterBar() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Text(
-            'Filter by Element',
-            style: mdBold.copyWith(color: bgDark),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 42,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: pokemonTypeList.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final typeItem = pokemonTypeList[index];
-              final isSelected = _selectedType == typeItem.name;
-
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      if (_selectedType == typeItem.name) return;
-                      setState(() => _selectedType = typeItem.name);
-                      context.read<HomeCubit>().filterByType(typeItem.name);
-                      if (_scrollController.hasClients) {
-                        _scrollController.animateTo(
-                          0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? typeItem.color : bgLight,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? typeItem.color : borderNeutral,
-                          width: 1.2,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: typeItem.color.withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (typeItem.iconAsset != null)
-                            SvgPicture.asset(
-                              typeItem.iconAsset!,
-                              width: 14,
-                              height: 14,
-                              colorFilter: ColorFilter.mode(
-                                isSelected ? black00 : typeItem.color,
-                                BlendMode.srcIn,
-                              ),
-                            )
-                          else
-                            Icon(
-                              typeItem.fallbackIcon ?? Icons.catching_pokemon,
-                              size: 14,
-                              color: isSelected ? black00 : typeItem.color,
-                            ),
-                          const SizedBox(width: 6),
-                          Text(
-                            typeItem.name,
-                            style: (isSelected ? xsBold : xsMedium).copyWith(
-                              fontSize: 12.5,
-                              color: isSelected ? black00 : black700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+    return PokemonTypeFilterBar(
+      selectedType: _selectedType,
+      showTitle: true,
+      title: 'Filter by Element',
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemSpacing: 8,
+      onSelected: (typeName) {
+        if (_selectedType == typeName) return;
+        setState(() => _selectedType = typeName);
+        context.read<HomeCubit>().filterByType(typeName);
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      },
     );
   }
 

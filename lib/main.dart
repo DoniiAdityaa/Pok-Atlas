@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pokeatlas/config/service_locator.dart';
+import 'package:pokeatlas/features/compare/cubit/compare_cubit.dart';
 import 'package:pokeatlas/features/detail/cubit/detail_cubit.dart';
 import 'package:pokeatlas/features/home/cubit/home_cubit.dart';
 import 'package:pokeatlas/ui/shared_widget/main_navigation.dart';
@@ -24,6 +25,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (_) => serviceLocator<DetailCubit>(),
         ),
+        BlocProvider(
+          create: (_) => serviceLocator<CompareCubit>(),
+        ),
+
       ],
       child: MaterialApp(
         title: 'PokéAtlas',

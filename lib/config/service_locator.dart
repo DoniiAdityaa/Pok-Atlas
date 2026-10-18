@@ -2,6 +2,7 @@ import 'package:awesome_dio_interceptor/awesome_dio_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:pokeatlas/features/compare/cubit/compare_cubit.dart';
 import 'package:pokeatlas/repository/pokemon_detail/pokemon_detail_repository.dart';
 import 'package:pokeatlas/repository/pokemon_list/pokemon_list_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,6 +81,13 @@ Future<void> setUpLocator() async {
   serviceLocator.registerFactory<DetailCubit>(
     () => DetailCubit(
       repository: serviceLocator.get<PokemonDetailRepository>(),
+    ),
+  );
+
+  serviceLocator.registerFactory<CompareCubit>(
+    () => CompareCubit(
+      listRepository: serviceLocator.get<PokemonListRepository>(),
+      detailRepository: serviceLocator.get<PokemonDetailRepository>(),
     ),
   );
 }

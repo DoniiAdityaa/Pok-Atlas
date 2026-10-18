@@ -43,7 +43,8 @@ extension StringExtension on String {
     return dateFormat.format(dt);
   }
 
-  String timeStampToStringLocal({String format = 'dd MMMM yyyy, HH:mm', BuildContext? context}) {
+  String timeStampToStringLocal(
+      {String format = 'dd MMMM yyyy, HH:mm', BuildContext? context}) {
     // Parse the UTC time string
     DateTime dateTimeUtc = DateTime.parse(this);
 
@@ -143,8 +144,10 @@ extension StringExtension on String {
     var buffer = uint8list.buffer;
     final ByteData byteData = ByteData.view(buffer);
     var tempDir = await getTemporaryDirectory();
-    File file = await File('${tempDir.path}/file${DateTime.now().millisecondsSinceEpoch}.${getFileExtension()}')
-        .writeAsBytes(buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+    File file = await File(
+            '${tempDir.path}/file${DateTime.now().millisecondsSinceEpoch}.${getFileExtension()}')
+        .writeAsBytes(
+            buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
     return XFile(file.path);
     // Directory tempDir = await getTemporaryDirectory();
     // String tempPath = tempDir.path;
@@ -168,7 +171,7 @@ extension StringExtension on String {
 
   String convertTo12HourFormat() {
     // Split the time string into hours, minutes, and seconds
-    List<String> parts = this.split(':');
+    List<String> parts = split(':');
     int hour = int.parse(parts[0]);
     int minute = int.parse(parts[1]);
 
@@ -189,6 +192,6 @@ extension StringExtension on String {
   }
 
   String capitalize() {
-    return "${this[0].toUpperCase()}${this.substring(1).toLowerCase()}";
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -6,7 +5,7 @@ class RupiahFormatter extends TextInputFormatter {
   final bool showRp;
   final bool allowNegative;
 
-  RupiahFormatter({this.allowNegative = false,this.showRp = true});
+  RupiahFormatter({this.allowNegative = false, this.showRp = true});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -29,9 +28,9 @@ class RupiahFormatter extends TextInputFormatter {
       decimalDigits: 0,
     );
     String formattedText;
-    if(newText.isNotEmpty){
+    if (newText.isNotEmpty) {
       formattedText = formatter.format(int.parse(newText));
-    } else{
+    } else {
       formattedText = "";
     }
 
