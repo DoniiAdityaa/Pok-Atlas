@@ -308,9 +308,9 @@ class HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // 3. Ikon Kanan: Surprise Pokémon Encounter (Dadu Acak)
+          // 3. Ikon Kanan: Surprise Pokémon Encounter (Pokéball Acak)
           _buildHeaderCircleButton(
-            icon: Icons.casino_outlined,
+            imageAsset: 'assets/images/icons/pokeball.png',
             tooltip: 'Surprise Pokémon!',
             hasBadgeDot: true, // Dot merah aksen Pokémon liar
             onTap: _pickRandomPokemon,
@@ -322,7 +322,8 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// Helper tombol lingkaran empuk di Header
   Widget _buildHeaderCircleButton({
-    required IconData icon,
+    IconData? icon,
+    String? imageAsset,
     required VoidCallback onTap,
     String? tooltip,
     bool hasBadgeDot = false,
@@ -354,11 +355,19 @@ class HomeScreenState extends State<HomeScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: bgDark,
-              ),
+              if (imageAsset != null)
+                Image.asset(
+                  imageAsset,
+                  width: 22,
+                  height: 22,
+                  fit: BoxFit.contain,
+                )
+              else if (icon != null)
+                Icon(
+                  icon,
+                  size: 20,
+                  color: bgDark,
+                ),
             ],
           ),
         ),

@@ -292,10 +292,10 @@ class _CompareScreenState extends State<CompareScreen> {
         child: Container(
           height: 195,
           decoration: BoxDecoration(
-            color: black50,
+            color: bgLight,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: primaryColor.withValues(alpha: 0.3),
+              color: black200,
               width: 1.5,
             ),
           ),
@@ -1225,7 +1225,7 @@ class _CompareScreenState extends State<CompareScreen> {
                           ),
                           Row(
                             children: [
-                              // Tombol Random / Surprise Me 🎲
+                              // Tombol Random / Surprise Me (Pokéball)
                               InkWell(
                                 onTap: () {
                                   HapticFeedback.mediumImpact();
@@ -1242,8 +1242,13 @@ class _CompareScreenState extends State<CompareScreen> {
                                       SnackBar(
                                         content: Row(
                                           children: [
-                                            const Text('🎲 ',
-                                                style: TextStyle(fontSize: 16)),
+                                            Image.asset(
+                                              'assets/images/icons/pokeball.png',
+                                              width: 18,
+                                              height: 18,
+                                              fit: BoxFit.contain,
+                                            ),
+                                            const SizedBox(width: 8),
                                             Text(
                                               'Selected: ${randomItem.capitalizedName} for ${isSlotA ? "Slot A" : "Slot B"}!',
                                               style: smMedium.copyWith(
@@ -1268,16 +1273,27 @@ class _CompareScreenState extends State<CompareScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withValues(alpha: 0.1),
+                                    color: bgLight,
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color:
-                                          primaryColor.withValues(alpha: 0.3),
-                                      width: 1,
+                                      color: borderNeutral,
+                                      width: 1.2,
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.04),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                  child: const Text('🎲',
-                                      style: TextStyle(fontSize: 12)),
+                                  child: Image.asset(
+                                    'assets/images/icons/pokeball.png',
+                                    width: 16,
+                                    height: 16,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 4),
