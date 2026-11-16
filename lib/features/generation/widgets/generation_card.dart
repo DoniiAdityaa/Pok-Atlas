@@ -63,7 +63,7 @@ class GenerationCard extends StatelessWidget {
             child: Text(
               gen.romanNumeral,
               style: TextStyle(
-                fontFamily: 'poppins',
+                fontFamily: 'Poppins',
                 fontSize: 160,
                 fontWeight: FontWeight.w900,
                 color: gen.accentColor.withValues(alpha: 0.08),
