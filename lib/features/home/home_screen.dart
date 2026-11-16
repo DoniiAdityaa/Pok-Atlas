@@ -9,11 +9,14 @@ import '../../data/api/api_service.dart';
 import '../../models/pokemon_detail_model.dart';
 import '../../models/pokemon_list_model.dart';
 import '../../ui/color.dart';
+import '../../ui/shared_widget/app_messenger.dart';
+import '../../ui/shared_widget/pokemon_empty_state.dart';
 import '../../ui/shared_widget/pokemon_search_bar.dart';
 import '../../ui/shared_widget/pokemon_type_filter_bar.dart';
 import '../../ui/typography.dart';
 import '../compare/compare_screen.dart';
 import '../detail/detail_screen.dart';
+import '../generation/generation_screen.dart';
 import 'cubit/home_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -395,7 +398,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// Banner Pokémon of the Session — random, fetched live from API
   Widget _buildFeaturedCard() {
-    if (_selectedType != 'All' || _searchController.text.trim().isNotEmpty) {
+    if (_searchController.text.trim().isNotEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -431,7 +434,7 @@ class HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: InkWell(
-        onTap: () => _showPokemonItemQuickDetails(pokemon.toListItem),
+        onTap: () => _navigateToDetail(pokemon.toListItem),
         borderRadius: BorderRadius.circular(28),
         child: Container(
           height: 190,
@@ -667,18 +670,9 @@ class HomeScreenState extends State<HomeScreen> {
                         PokemonTypeColors.ice,
                       ],
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '🧬 Evolution Explorer coming soon!',
-                              style: xsMedium.copyWith(color: black00),
-                            ),
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                        AppMessenger.showComingSoon(
+                          context,
+                          featureName: 'Evolution Explorer',
                         );
                       },
                     ),
@@ -851,17 +845,10 @@ class HomeScreenState extends State<HomeScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '🌍 Generation & Region Atlas coming soon!',
-                style: xsMedium.copyWith(color: black00),
-              ),
-              duration: const Duration(seconds: 1),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const GenerationScreen(),
             ),
           );
         },
@@ -1275,26 +1262,11 @@ class HomeScreenState extends State<HomeScreen> {
   }) {
     if (pokemons.isEmpty) {
       return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40.0),
-          child: Column(
-            children: [
-              const Text('🔍', style: xxlRegular),
-              const SizedBox(height: 12),
-              Text(
-                'No Pokémon found',
-                style: mdSemiBold.copyWith(color: bgDark),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Try searching with a different name or ID.',
-                style: smRegular.copyWith(
-                  fontSize: 13,
-                  color: black500,
-                ),
-              ),
-            ],
-          ),
+        child: PokemonEmptyState(
+          emoji: '🔍',
+          title: 'No Pokémon Found',
+          subtitle: 'Try searching with a different name or ID.',
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
         ),
       );
     }
@@ -1371,7 +1343,7 @@ class HomeScreenState extends State<HomeScreen> {
     final isFav = _favoriteIds.contains(pokemon.id ?? 0);
 
     return InkWell(
-      onTap: () => _showPokemonItemQuickDetails(pokemon),
+      onTap: () => _navigateToDetail(pokemon),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         height: 118,
@@ -1582,7 +1554,7 @@ class HomeScreenState extends State<HomeScreen> {
     final isFav = _favoriteIds.contains(pokemon.id ?? 0);
 
     return InkWell(
-      onTap: () => _showPokemonItemQuickDetails(pokemon),
+      onTap: () => _navigateToDetail(pokemon),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
@@ -1740,159 +1712,21 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Modal Bottom Sheet Detail Singkat untuk Pokémon dari API
-  void _showPokemonItemQuickDetails(PokemonListItemModel pokemon) {
+  /// Navigasi langsung ke DetailScreen saat kartu Pokémon diklik
+  void _navigateToDetail(PokemonListItemModel pokemon) {
     final typeColor = _getPokemonAccentColor(pokemon.id ?? 1);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-              decoration: const BoxDecoration(
-                color: bgLight,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: black300,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            pokemon.formattedId,
-                            style: xsBold.copyWith(
-                              fontSize: 13,
-                              color: black500,
-                            ),
-                          ),
-                          Text(
-                            pokemon.capitalizedName,
-                            style: lBold.copyWith(
-                              fontSize: 26,
-                              color: bgDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          if (pokemon.id != null) {
-                            _toggleFavorite(pokemon.id!);
-                            setModalState(() {});
-                          }
-                        },
-                        icon: IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              size: 22, color: black400),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: typeColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: CachedNetworkImage(
-                        imageUrl: pokemon.imageUrl ?? '',
-                        height: 160,
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) => Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: typeColor,
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => const Icon(
-                          Icons.catching_pokemon,
-                          size: 48,
-                          color: black400,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Official Pokémon entry from PokéAPI database. Tap view details to inspect base stats, abilities, move pool, and evolution.',
-                    style: smRegular.copyWith(
-                      fontSize: 13,
-                      color: black600,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailScreen(
-                              pokemonIdOrName:
-                                  pokemon.id?.toString() ?? pokemon.name ?? '6',
-                              initialPokemonId: pokemon.id ?? 6,
-                              initialName: pokemon.capitalizedName,
-                              initialImageUrl: pokemon.imageUrl,
-                              initialColor: typeColor,
-                              initialTypes:
-                                  PokemonTypeColors.getTypesById(pokemon.id),
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: typeColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'View Full Details',
-                        style: smBold.copyWith(
-                          color: Colors.white,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailScreen(
+          pokemonIdOrName: pokemon.id?.toString() ?? pokemon.name ?? '6',
+          initialPokemonId: pokemon.id ?? 6,
+          initialName: pokemon.capitalizedName,
+          initialImageUrl: pokemon.imageUrl,
+          initialColor: typeColor,
+          initialTypes: PokemonTypeColors.getTypesById(pokemon.id),
+        ),
+      ),
     );
   }
 

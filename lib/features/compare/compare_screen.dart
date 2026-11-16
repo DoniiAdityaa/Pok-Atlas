@@ -6,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../models/pokemon_detail_model.dart';
 import '../../models/pokemon_list_model.dart';
 import '../../ui/color.dart';
+import '../../ui/shared_widget/app_messenger.dart';
 import '../../ui/shared_widget/pokemon_search_bar.dart';
 import '../../ui/shared_widget/pokemon_type_filter_bar.dart';
 import '../../ui/typography.dart';
@@ -1238,33 +1239,10 @@ class _CompareScreenState extends State<CompareScreen> {
                                     Navigator.pop(sheetContext);
                                     cubit.selectPokemon(
                                         isSlotA ? 'A' : 'B', randomItem.id);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            Image.asset(
-                                              'assets/images/icons/pokeball.png',
-                                              width: 18,
-                                              height: 18,
-                                              fit: BoxFit.contain,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Selected: ${randomItem.capitalizedName} for ${isSlotA ? "Slot A" : "Slot B"}!',
-                                              style: smMedium.copyWith(
-                                                  color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                        backgroundColor: bgDark,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        duration:
-                                            const Duration(milliseconds: 1600),
-                                      ),
+                                    AppMessenger.showSelected(
+                                      context,
+                                      title:
+                                          'Selected: ${randomItem.capitalizedName} for ${isSlotA ? "Slot A" : "Slot B"}!',
                                     );
                                   }
                                 },
