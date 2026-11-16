@@ -1,0 +1,33 @@
+# Cursor Rules — PokéAtlas
+
+Flutter Pokémon Encyclopedia app with Layered Clean Architecture + BLoC/Cubit + get_it + Retrofit/Dio.
+
+## Skills
+
+Detailed guides are in `.agents/skills/`:
+- `feature-flow` — 8-step flow for creating a new feature
+- `clean-architecture` — Layer diagram and dependency rules
+- `cubit-pattern` — Sealed class state + Cubit conventions
+- `repository-pattern` — BaseRepository, getStateOf, in-memory cache
+- `networking` — ApiService (Retrofit), Dio, ApiEndpoints
+- `error-handling` — GlobalErrorHandler, DataState, AppMessenger
+- `json-parser` — Isolate parsing with JsonParser
+- `responsive` — Breakpoints and Responsive widget
+- `logger` — LoggerHelper (no print)
+- `testing` — Mockito + blocTest
+
+## Hard Rules
+
+### Architecture
+- **NO GETX** — state management is `flutter_bloc` (Cubit), DI is `get_it`
+- UI calls Cubit only; Cubit calls Repository only; Repository calls ApiService only
+- Register repos as `lazySingleton`, cubits as `factory` in `lib/config/service_locator.dart`
+
+### Code Rules
+- Never use `print()` or `debugPrint()` → use `LoggerHelper`
+- Never show raw SnackBar → use `AppMessenger`
+- Colors come from `lib/ui/color.dart`; Typography from `lib/ui/typography.dart`
+- State must extend `Equatable` and use `sealed class`
+- All network calls wrapped in `BaseRepository.getStateOf()`
+- After adding `@JsonSerializable` or `@RestApi`, run:
+  `dart run build_runner build --delete-conflicting-outputs`

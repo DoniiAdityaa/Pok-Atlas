@@ -2,18 +2,20 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../config/service_locator.dart';
 import '../../models/pokemon_list_model.dart';
 import '../../repository/pokemon_list/pokemon_list_repository.dart';
 import '../../ui/color.dart';
+import '../../ui/shared_widget/app_bottom_sheet.dart';
 import '../../ui/shared_widget/app_messenger.dart';
-import '../../ui/shared_widget/pokemon_empty_state.dart';
 import '../../ui/shared_widget/pokemon_search_bar.dart';
 import '../../ui/shared_widget/pokemon_type_filter_bar.dart';
 import '../../ui/typography.dart';
 import '../detail/detail_screen.dart';
 import 'model/generation_model.dart';
+import 'widgets/generation_card.dart';
 
 /// Halaman Detail Region / Generasi (PokéAtlas Region Hub)
 /// Menampilkan info wilayah, quick actions (Map & Legendaries),
@@ -39,6 +41,7 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
 
   bool _isLoading = true;
   bool _isFavorite = false;
+  bool _isLegendaryOnly = false;
   String _selectedType = 'All';
   String _searchQuery = '';
 
@@ -125,6 +128,11 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
       }).toList();
     }
 
+    if (_isLegendaryOnly) {
+      final legIds = widget.generation.legendaryIds;
+      results = results.where((p) => legIds.contains(p.id)).toList();
+    }
+
     setState(() {
       _filteredPokemon = results;
     });
@@ -160,184 +168,195 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
   // ============================================================
   void _showMapModal() {
     HapticFeedback.lightImpact();
+    final gen = widget.generation;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
         return Container(
-          height: MediaQuery.of(modalContext).size.height * 0.75,
+          height: MediaQuery.of(modalContext).size.height * 0.85,
           decoration: const BoxDecoration(
             color: bgLight,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             children: [
-              _buildModalHandle(),
-              _buildModalHeader(
-                title: '${widget.generation.regionName} Cartography',
-                subtitle: 'Official Geographic Atlas of the Region',
+              const AppSheetHandle(),
+              AppSheetHeader(
+                title: '${gen.regionName} Cartography',
+                subtitle: 'Official Geographic Map • Pinch to zoom',
+                accentColor: gen.accentColor,
+                leadingIcon: SvgPicture.asset(
+                  'assets/images/icons/map.svg',
+                  width: 18,
+                  height: 18,
+                  colorFilter: ColorFilter.mode(
+                    gen.accentColor,
+                    BlendMode.srcIn,
+                  ),
+                ),
                 onClose: () => Navigator.pop(modalContext),
               ),
               const Divider(height: 1, color: borderNeutral),
+
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                   physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Map Banner
-                      Container(
-                        height: 220,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          gradient: LinearGradient(
-                            colors: widget.generation.gradientColors,
-                          ),
-                          border: Border.all(
-                            color: widget.generation.accentColor
-                                .withValues(alpha: 0.25),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.generation.accentColor
-                                  .withValues(alpha: 0.10),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                  children: [
+                    // 1. Peta Zoomable (PhotoView)
+                    Container(
+                      height: 280,
+                      decoration: BoxDecoration(
+                        color: gen.gradientColors.first,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: gen.accentColor.withValues(alpha: 0.22),
+                          width: 1.2,
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Pokéball watermark
-                            Positioned(
-                              right: -20,
-                              bottom: -20,
-                              child: Opacity(
-                                opacity: 0.08,
-                                child: Container(
-                                  width: 130,
-                                  height: 130,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: bgLight,
-                                  ),
-                                ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: gen.accentColor.withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        children: [
+                          PhotoView(
+                            imageProvider: AssetImage(gen.mapAsset),
+                            minScale: PhotoViewComputedScale.contained * 0.9,
+                            maxScale: PhotoViewComputedScale.covered * 3.0,
+                            initialScale: PhotoViewComputedScale.contained,
+                            backgroundDecoration: const BoxDecoration(
+                              color: Colors.transparent,
+                            ),
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                'Peta belum tersedia',
+                                style: smMedium.copyWith(color: black400),
                               ),
                             ),
-                            Image.asset(
-                              widget.generation.groupArtworkAsset,
-                              width: 160,
-                              fit: BoxFit.contain,
-                            ),
-                            Positioned(
-                              bottom: 12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color:
-                                      Colors.white.withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  '🗺️  ${widget.generation.regionName} Territory Map',
-                                  style: xxsBold.copyWith(
-                                    color: widget.generation.accentColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Text(
-                        'Regional Geography & Lore',
-                        style: smBold.copyWith(color: textNeutralPrimary),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'The ${widget.generation.regionName} region is renowned for its diverse natural habitats ranging from coastal towns to rugged mountain ranges. Inspired by real-world ${widget.generation.realWorldInspiration}, trainers embark across famous routes and gym cities.',
-                        style: smRegular.copyWith(
-                          color: black600,
-                          height: 1.55,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Real-world highlight badge
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: widget.generation.accentColor
-                              .withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: widget.generation.accentColor
-                                .withValues(alpha: 0.20),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
+                          Positioned(
+                            right: 10,
+                            bottom: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: widget.generation.accentColor
-                                    .withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
+                                color: Colors.black.withValues(alpha: 0.55),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Center(
-                                child: Text(
-                                  '📍',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    'Real-World Inspiration',
-                                    style: xxsBold.copyWith(
-                                      color: widget.generation.accentColor,
-                                      letterSpacing: 0.4,
-                                    ),
+                                  const Icon(
+                                    Icons.pinch_outlined,
+                                    size: 11,
+                                    color: Colors.white,
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    widget.generation.realWorldInspiration,
-                                    style: smSemiBold.copyWith(
-                                      color: textNeutralPrimary,
-                                      fontSize: 13,
+                                    'Pinch / Drag to explore',
+                                    style: xxsMedium.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 9.5,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 2. Real-World Inspiration Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: bg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: borderNeutral, width: 1.1),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: gen.accentColor.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.place_outlined,
+                                size: 18,
+                                color: gen.accentColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'REAL-WORLD INSPIRATION',
+                                  style: xxsBold.copyWith(
+                                    color: black500,
+                                    letterSpacing: 0.6,
+                                    fontSize: 9.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  gen.realWorldInspiration,
+                                  style: smSemiBold.copyWith(
+                                    color: textNeutralPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // 3. Stats 3 Kolom (Spesies / Legendary / Rentang ID)
+                    Row(
+                      children: [
+                        _buildMapStatBox(
+                          label: 'TOTAL SPECIES',
+                          value: '${gen.totalPokemon}',
+                          accentColor: gen.accentColor,
+                        ),
+                        const SizedBox(width: 10),
+                        _buildMapStatBox(
+                          label: 'LEGENDARIES',
+                          value: '${gen.legendaryIds.length}',
+                          accentColor: const Color(0xFFD4A017),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildMapStatBox(
+                          label: 'DEX RANGE',
+                          value: gen.idRange,
+                          accentColor: primaryColor,
+                          isSmallValue: true,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -347,204 +366,48 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
     );
   }
 
-  // ============================================================
-  // MODAL: Legendaries
-  // ============================================================
-  void _showLegendariesModal() {
-    HapticFeedback.lightImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return Container(
-          height: MediaQuery.of(modalContext).size.height * 0.70,
-          decoration: const BoxDecoration(
-            color: bgLight,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            children: [
-              _buildModalHandle(),
-              _buildModalHeader(
-                title: '${widget.generation.regionName} Legendary Pokémon',
-                subtitle:
-                    '${widget.generation.legendaryIds.length} Mythical & Legendary Species',
-                onClose: () => Navigator.pop(modalContext),
+  Widget _buildMapStatBox({
+    required String label,
+    required String value,
+    required Color accentColor,
+    bool isSmallValue = false,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderNeutral, width: 1.1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: xxsBold.copyWith(
+                color: black500,
+                fontSize: 8.5,
+                letterSpacing: 0.5,
               ),
-              const Divider(height: 1, color: borderNeutral),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(20),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: widget.generation.legendaryIds.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final id = widget.generation.legendaryIds[index];
-                    final types = PokemonTypeColors.getTypesById(id);
-                    final accentColor = types.isNotEmpty
-                        ? PokemonTypeColors.getColor(types.first)
-                        : widget.generation.accentColor;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(modalContext);
-                          _navigateToPokemonDetail(
-                            PokemonListItemModel(
-                              name: 'pokemon',
-                              url: 'https://pokeapi.co/api/v2/pokemon/$id/',
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(18),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: bgLight,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: accentColor.withValues(alpha: 0.22),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accentColor.withValues(alpha: 0.06),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              // Avatar with tinted background
-                              Container(
-                                width: 58,
-                                height: 58,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      accentColor.withValues(alpha: 0.18),
-                                      accentColor.withValues(alpha: 0.06),
-                                    ],
-                                  ),
-                                  border: Border.all(
-                                    color: accentColor.withValues(alpha: 0.20),
-                                  ),
-                                ),
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png',
-                                  fit: BoxFit.contain,
-                                  placeholder: (_, __) => Center(
-                                    child: SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 1.5,
-                                        color: accentColor,
-                                      ),
-                                    ),
-                                  ),
-                                  errorWidget: (_, __, ___) => Icon(
-                                    Icons.catching_pokemon_rounded,
-                                    color: accentColor.withValues(alpha: 0.5),
-                                    size: 26,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-
-                              // Info
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '#${id.toString().padLeft(4, '0')}',
-                                      style: xxsBold.copyWith(
-                                        color: accentColor,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Legendary #$id',
-                                      style: smBold.copyWith(
-                                        color: textNeutralPrimary,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Wrap(
-                                      spacing: 4,
-                                      children: types.map((t) {
-                                        final tc =
-                                            PokemonTypeColors.getColor(t);
-                                        final assetPath =
-                                            'assets/images/element/${t.toLowerCase()}.svg';
-                                        return Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 7, vertical: 2.5),
-                                          decoration: BoxDecoration(
-                                            color: tc.withValues(alpha: 0.14),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              SvgPicture.asset(
-                                                assetPath,
-                                                width: 10,
-                                                height: 10,
-                                                colorFilter: ColorFilter.mode(
-                                                  tc,
-                                                  BlendMode.srcIn,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 3),
-                                              Text(
-                                                t,
-                                                style: xxsBold.copyWith(
-                                                  color: tc,
-                                                  fontSize: 9.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 13,
-                                color: black400,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: (isSmallValue ? smBold : mBold).copyWith(
+                color: accentColor,
+                fontSize: isSmallValue ? 12 : 16,
               ),
-            ],
-          ),
-        );
-      },
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
-
   // ============================================================
   // BUILD
   // ============================================================
@@ -559,8 +422,11 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // 1. Hero Header
+            // 1. App Bar minimalis (konsisten dengan GenerationScreen)
             SliverToBoxAdapter(child: _buildRegionHeroHeader(gen)),
+
+            // 1b. Banner Region
+            SliverToBoxAdapter(child: _buildRegionBanner(gen)),
 
             // 2. Quick Action Buttons (Map & Legendaries)
             SliverToBoxAdapter(child: _buildQuickActions(gen)),
@@ -568,7 +434,10 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
             // 3. Search Bar
             SliverToBoxAdapter(child: _buildSearch(gen)),
 
-            // 4. Type Filter Bar (shared component)
+            // 4. Legendary Filter Chip
+            SliverToBoxAdapter(child: _buildLegendaryFilter(gen)),
+
+            // 5. Type Filter Bar (shared component)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: 10, bottom: 4),
@@ -583,10 +452,10 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
               ),
             ),
 
-            // 5. Pokédex Section Header
+            // 6. Pokédex Section Header
             SliverToBoxAdapter(child: _buildPokedexSectionHeader(gen)),
 
-            // 6. Grid Content
+            // 7. Grid Content
             if (_isLoading)
               _buildShimmerGrid()
             else if (_filteredPokemon.isEmpty)
@@ -621,294 +490,115 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
   // WIDGETS
   // ============================================================
 
-  /// Reusable modal drag handle
-  Widget _buildModalHandle() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.only(top: 12, bottom: 8),
-        width: 40,
-        height: 4.5,
-        decoration: BoxDecoration(
-          color: black300,
-          borderRadius: BorderRadius.circular(3),
-        ),
-      ),
-    );
-  }
-
-  /// Reusable modal header row
-  Widget _buildModalHeader({
-    required String title,
-    required String subtitle,
-    required VoidCallback onClose,
-  }) {
+  /// 1. Hero Header dengan gaya minimalis (konsisten dengan GenerationScreen)
+  Widget _buildRegionHeroHeader(GenerationModel gen) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Tombol Kembali Lingkaran
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+              },
+              borderRadius: BorderRadius.circular(22),
+              splashColor: primaryColor50,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: bgLight,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: borderNeutral.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: bgDark,
+                ),
+              ),
+            ),
+          ),
+
+          // Judul Tengah
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: mdBold.copyWith(
+                  '${gen.regionName} Atlas',
+                  style: mBold.copyWith(
                     color: textNeutralPrimary,
                     fontSize: 18,
+                    letterSpacing: -0.3,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  subtitle,
-                  style: xxsRegular.copyWith(color: black500),
+                  'GEN ${gen.romanNumeral} • ${gen.year}',
+                  style: xxsRegular.copyWith(color: black500, fontSize: 11),
                 ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: onClose,
-            icon: const Icon(Icons.close_rounded, color: black500),
-          ),
-        ],
-      ),
-    );
-  }
 
-  /// 1. Hero Header dengan gradient pastel, ilustrasi starter, dan watermark
-  Widget _buildRegionHeroHeader(GenerationModel gen) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gen.gradientColors,
-        ),
-        border: Border.all(
-          color: gen.accentColor.withValues(alpha: 0.22),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: gen.accentColor.withValues(alpha: 0.14),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          // Decorative circle watermark (kanan bawah)
-          Positioned(
-            right: -28,
-            bottom: -28,
-            child: Opacity(
-              opacity: 0.12,
+          // Tombol Favorite Lingkaran
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _isFavorite = !_isFavorite);
+                AppMessenger.show(
+                  context,
+                  message: _isFavorite
+                      ? 'Added ${gen.regionName} to Favorites!'
+                      : 'Removed ${gen.regionName} from Favorites',
+                );
+              },
+              borderRadius: BorderRadius.circular(22),
+              splashColor: primaryColor50,
               child: Container(
-                width: 130,
-                height: 130,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
+                  color: bgLight,
                   shape: BoxShape.circle,
-                  color: gen.accentColor,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 10,
-            bottom: 10,
-            child: Opacity(
-              opacity: 0.06,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: gen.accentColor,
-                ),
-              ),
-            ),
-          ),
-
-          // Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 14, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Bar: Back | Gen Badge | Favorite
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Tombol Back
-                    Material(
-                      color: Colors.white,
-                      shape: const CircleBorder(),
-                      elevation: 0,
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => Navigator.pop(context),
-                        child: const SizedBox(
-                          width: 38,
-                          height: 38,
-                          child: Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            size: 16,
-                            color: textNeutralPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Badge Gen
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: gen.accentColor.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: gen.accentColor.withValues(alpha: 0.32),
-                        ),
-                      ),
-                      child: Text(
-                        'GEN ${gen.romanNumeral} • ${gen.year}',
-                        style: xxsBold.copyWith(
-                          color: gen.accentColor,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-
-                    // Tombol Favorite
-                    Material(
-                      color: Colors.white,
-                      shape: const CircleBorder(),
-                      elevation: 0,
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _isFavorite = !_isFavorite);
-                          AppMessenger.show(
-                            context,
-                            message: _isFavorite
-                                ? '❤️  Added ${gen.regionName} to Favorites!'
-                                : 'Removed ${gen.regionName} from Favorites',
-                          );
-                        },
-                        child: SizedBox(
-                          width: 38,
-                          height: 38,
-                          child: Icon(
-                            _isFavorite
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 18,
-                            color: _isFavorite ? errorColor : black500,
-                          ),
-                        ),
-                      ),
+                  border: Border.all(
+                    color: borderNeutral.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 16),
-
-                // Kiri: Teks | Kanan: Ilustrasi Trio
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Teks info region
-                    Expanded(
-                      flex: 11,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            gen.regionName.toUpperCase(),
-                            style: lBold.copyWith(
-                              color: textNeutralPrimary,
-                              fontSize: 30,
-                              letterSpacing: 0.5,
-                              height: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            gen.games,
-                            style: xxsMedium.copyWith(
-                              color: black600,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            gen.tagline,
-                            style: xxsRegular.copyWith(
-                              color: black500,
-                              fontSize: 10,
-                              fontStyle: FontStyle.italic,
-                              height: 1.4,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 12),
-                          // Real-world location chip
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.88),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: gen.accentColor.withValues(alpha: 0.22),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '📍',
-                                  style: const TextStyle(fontSize: 10),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  gen.realWorldInspiration,
-                                  style: xxsSemiBold.copyWith(
-                                    color: gen.accentColor,
-                                    fontSize: 9.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 6),
-
-                    // Ilustrasi Trio Starter
-                    SizedBox(
-                      width: 128,
-                      height: 116,
-                      child: Image.asset(
-                        gen.groupArtworkAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.catching_pokemon,
-                          size: 48,
-                          color: black400,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Icon(
+                  _isFavorite
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  size: 18,
+                  color: _isFavorite ? errorColor : bgDark,
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -916,76 +606,166 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
     );
   }
 
-  /// 2. Quick Actions — Explore Map & Legendaries (lebih berkarakter)
+  /// 1b. Banner Region — pakai shared GenerationCard tanpa tombol Explore
+  Widget _buildRegionBanner(GenerationModel gen) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+      child: GenerationCard(
+        generation: gen,
+        showExploreButton: false,
+        height: 168,
+      ),
+    );
+  }
+
+  /// 2. Explore Map — kartu hero lebar dengan preview peta region
   Widget _buildQuickActions(GenerationModel gen) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: Row(
-        children: [
-          _buildActionButton(
-            emoji: '🗺️',
-            label: 'Explore Map',
-            accentColor: gen.accentColor,
-            onTap: _showMapModal,
-          ),
-          const SizedBox(width: 10),
-          _buildActionButton(
-            emoji: '👑',
-            label: '${gen.legendaryIds.length} Legendaries',
-            accentColor: gen.accentColor,
-            onTap: _showLegendariesModal,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required String emoji,
-    required String label,
-    required Color accentColor,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
-            onTap();
+            _showMapModal();
           },
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+            height: 132,
             decoration: BoxDecoration(
               color: bgLight,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: accentColor.withValues(alpha: 0.20),
+                color: gen.accentColor.withValues(alpha: 0.22),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: accentColor.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  color: gen.accentColor.withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 15)),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: xsBold.copyWith(
-                      color: textNeutralPrimary,
-                      fontSize: 12,
+                // Preview peta region sebagai background
+                Image.asset(
+                  gen.mapAsset,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: gen.gradientColors,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                // Gradient overlay agar teks terbaca
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.62),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Konten teks
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Icon map (SVG) dalam lingkaran kaca
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.20),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/images/icons/map.svg',
+                            width: 17,
+                            height: 17,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Teks
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${gen.regionName} Cartography',
+                                  style: smBold.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    letterSpacing: -0.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Official geographic atlas of the region',
+                                  style: xxsRegular.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.78),
+                                    fontSize: 10.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.20),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1013,7 +793,103 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
     );
   }
 
-  /// 5. Pokédex Section Header
+  /// 4. Legendary Filter Chip
+  Widget _buildLegendaryFilter(GenerationModel gen) {
+    const legendaryGold = Color(0xFFD4A017);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _isLegendaryOnly = !_isLegendaryOnly);
+            _applyFilters();
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _isLegendaryOnly
+                  ? legendaryGold.withValues(alpha: 0.14)
+                  : bgLight,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _isLegendaryOnly
+                    ? legendaryGold.withValues(alpha: 0.55)
+                    : borderNeutral,
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _isLegendaryOnly
+                      ? legendaryGold.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/images/icons/crown.svg',
+                  width: 14,
+                  height: 14,
+                  colorFilter: ColorFilter.mode(
+                    _isLegendaryOnly ? legendaryGold : black500,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Legendary Only',
+                  style: xsBold.copyWith(
+                    color: _isLegendaryOnly
+                        ? legendaryGold
+                        : textNeutralPrimary,
+                    fontSize: 11.5,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: (_isLegendaryOnly ? legendaryGold : black400)
+                        .withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${gen.legendaryIds.length}',
+                    style: xxsBold.copyWith(
+                      color:
+                          _isLegendaryOnly ? legendaryGold : black500,
+                      fontSize: 9.5,
+                    ),
+                  ),
+                ),
+                if (_isLegendaryOnly) ...[
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.close_rounded,
+                    size: 12,
+                    color: legendaryGold.withValues(alpha: 0.85),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 6. Pokédex Section Header
   Widget _buildPokedexSectionHeader(GenerationModel gen) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),

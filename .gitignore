@@ -12,6 +12,10 @@
 .swiftpm/
 migrate_working_dir/
 
+# Temporary
+.antigravity/
+.opencode/
+
 # IntelliJ related
 *.iml
 *.ipr
