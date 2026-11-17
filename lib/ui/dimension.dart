@@ -1,6 +1,3 @@
-
-
-
 const double screenPadding = 20;
 
 const double borderRadius0 = 0;
@@ -12,7 +9,6 @@ const double borderRadius300 = 12;
 const double borderRadius400 = 16;
 const double borderRadius500 = 20;
 const double borderRadius750 = 30;
-
 
 const double space0 = 0;
 const double space025 = 1;
@@ -32,7 +28,6 @@ const double space1600 = 64;
 const double space2000 = 80;
 const double space2400 = 96;
 const double space3200 = 128;
-
 
 const double spacing1 = 2;
 const double spacing2 = 4;

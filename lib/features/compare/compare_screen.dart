@@ -5,6 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../models/pokemon_detail_model.dart';
 import '../../models/pokemon_list_model.dart';
+import '../../ui/shared_widget/monstra_mascot.dart';
+import '../../ui/shared_widget/monstra_poses.dart';
+import '../../ui/shared_widget/app_header.dart';
 import '../../ui/color.dart';
 import '../../ui/shared_widget/app_messenger.dart';
 import '../../ui/shared_widget/pokemon_search_bar.dart';
@@ -100,60 +103,12 @@ class _CompareScreenState extends State<CompareScreen> {
     );
   }
 
-  /// 1. Top Header App Bar
+  /// 1. Top Header — memakai shared [AppPageHeader] (konsisten di semua layar)
   Widget _buildHeader(BuildContext context, CompareState state) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      child: Row(
-        children: [
-          // Tombol Kembali
-          InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: bgLight,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: black200, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: textNeutralPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // Judul Layar
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Compare Pokémon',
-                  style:
-                      mdBold.copyWith(color: textNeutralPrimary, height: 1.1),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'VS Arena & Stat Matchup',
-                  style: xsMedium.copyWith(color: black500),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return const AppPageHeader(
+      title: 'Compare Pokémon',
+      subtitle: 'VS Arena & Stat Matchup',
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 12),
     );
   }
 
@@ -467,14 +422,7 @@ class _CompareScreenState extends State<CompareScreen> {
                           imageUrl: pokemon.imageUrl,
                           fit: BoxFit.contain,
                           placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white60,
-                              ),
-                            ),
+                            child: MonstraLoader(size: 36),
                           ),
                           errorWidget: (context, url, error) => const Icon(
                             Icons.broken_image,
@@ -829,8 +777,16 @@ class _CompareScreenState extends State<CompareScreen> {
             ],
           ),
 
-          // Badge Advantage / Imbang
-          Container(
+          // Maskot wasit + Badge Advantage / Imbang
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (diff != 0)
+                const MonstraCheer(size: 40)
+              else
+                const MonstraMascot(size: 40),
+              const SizedBox(height: 6),
+              Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: aLead
@@ -845,6 +801,8 @@ class _CompareScreenState extends State<CompareScreen> {
                 letterSpacing: 0.5,
               ),
             ),
+          ),
+            ],
           ),
 
           // Total B
@@ -1227,9 +1185,9 @@ class _CompareScreenState extends State<CompareScreen> {
                           Row(
                             children: [
                               // Tombol Random / Surprise Me (Pokéball)
-                              InkWell(
+                              AppPillButton(
+                                tooltip: 'Random Pokémon',
                                 onTap: () {
-                                  HapticFeedback.mediumImpact();
                                   final pool = directory;
                                   if (pool.isNotEmpty) {
                                     final randomItem =
@@ -1246,33 +1204,6 @@ class _CompareScreenState extends State<CompareScreen> {
                                     );
                                   }
                                 },
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: bgLight,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: borderNeutral,
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.04),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/icons/pokeball.png',
-                                    width: 16,
-                                    height: 16,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
                               ),
                               const SizedBox(width: 4),
                               IconButton(

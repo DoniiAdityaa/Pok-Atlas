@@ -77,7 +77,7 @@ class AppMessenger {
   static void showSelected(
     BuildContext context, {
     required String title,
-    String iconAsset = 'assets/images/icons/pokeball.png',
+    String iconAsset = 'assets/images/icons/monstra_mark.png',
   }) {
     show(
       context,

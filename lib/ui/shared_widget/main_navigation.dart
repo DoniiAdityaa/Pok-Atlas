@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/home/home_screen.dart';
 import '../color.dart';
 import '../typography.dart';
+import 'monstra_poses.dart';
 
 enum MainTab {
   home,
@@ -415,21 +416,8 @@ class _MainNavigationState extends State<MainNavigation> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          color: errorColor.withValues(alpha: 0.10),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.favorite_rounded,
-                            size: 38,
-                            color: errorColor,
-                          ),
-                        ),
-                      ),
+                      // Maskot memeluk hati: favorit masih kosong
+                      const MonstraHug(size: 80),
                       const SizedBox(height: 18),
                       Text(
                         'Build Your Dream Team',
@@ -522,22 +510,8 @@ class _MainNavigationState extends State<MainNavigation> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          color:
-                              PokemonTypeColors.dragon.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.backpack_rounded,
-                            size: 38,
-                            color: PokemonTypeColors.dragon,
-                          ),
-                        ),
-                      ),
+                      // Maskot menyapa
+                      const MonstraWave(size: 80),
                       const SizedBox(height: 18),
                       Text(
                         'Trainer Kit & Options',

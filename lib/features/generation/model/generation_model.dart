@@ -154,7 +154,20 @@ class GenerationData {
       totalPokemon: 107,
       tagline: 'A mystical snowy land rooted in the creation of space & time.',
       realWorldInspiration: 'Hokkaido, Japan',
-      legendaryIds: [480, 481, 482, 483, 484, 485, 486, 487, 488, 491, 492, 493],
+      legendaryIds: [
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        491,
+        492,
+        493
+      ],
       gradientColors: [
         Color(0xFFEEF2FF), // Periwinkle Mist
         Color(0xFFE0E7FF), // Soft Iris Tint
@@ -182,7 +195,21 @@ class GenerationData {
       totalPokemon: 156,
       tagline: 'A bustling metropolis shaped by opposing ideals and truth.',
       realWorldInspiration: 'New York City, USA',
-      legendaryIds: [494, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649],
+      legendaryIds: [
+        494,
+        638,
+        639,
+        640,
+        641,
+        642,
+        643,
+        644,
+        645,
+        646,
+        647,
+        648,
+        649
+      ],
       gradientColors: [
         Color(0xFFF1F5F9), // Crisp Pearl Slate
         Color(0xFFE2E8F0), // Cool Steel Mist
@@ -238,7 +265,20 @@ class GenerationData {
       totalPokemon: 88,
       tagline: 'A tropical archipelago celebrated for island trials & Z-Moves.',
       realWorldInspiration: 'Hawaiian Archipelago, USA',
-      legendaryIds: [785, 786, 787, 788, 789, 790, 791, 792, 800, 801, 802, 807],
+      legendaryIds: [
+        785,
+        786,
+        787,
+        788,
+        789,
+        790,
+        791,
+        792,
+        800,
+        801,
+        802,
+        807
+      ],
       gradientColors: [
         Color(0xFFFFF7ED), // Warm Peach Gelato
         Color(0xFFFFEDD5), // Tropical Mango Cream
@@ -273,7 +313,8 @@ class GenerationData {
       ],
       accentColor: Color(0xFF0284C7), // Deep Aqua
       groupArtworkAsset: 'assets/images/generations/gen8.png',
-      mapAsset: 'assets/images/maps/hoenn.png', // Galar belum tersedia, fallback Hoenn
+      mapAsset:
+          'assets/images/maps/hoenn.png', // Galar belum tersedia, fallback Hoenn
       starters: [
         GenerationStarter(id: 810, name: 'Grookey', type: 'Grass'),
         GenerationStarter(id: 813, name: 'Scorbunny', type: 'Fire'),
@@ -292,9 +333,23 @@ class GenerationData {
       startId: 906,
       endId: 1025,
       totalPokemon: 120,
-      tagline: 'An open world realm illuminated by the sparkling Terastal phenomenon.',
+      tagline:
+          'An open world realm illuminated by the sparkling Terastal phenomenon.',
       realWorldInspiration: 'Iberian Peninsula (Spain & Portugal)',
-      legendaryIds: [1001, 1002, 1003, 1004, 1007, 1008, 1014, 1015, 1016, 1017, 1024, 1025],
+      legendaryIds: [
+        1001,
+        1002,
+        1003,
+        1004,
+        1007,
+        1008,
+        1014,
+        1015,
+        1016,
+        1017,
+        1024,
+        1025
+      ],
       gradientColors: [
         Color(0xFFFDF4FF), // Berry Frost
         Color(0xFFFAE8FF), // Violet Petal

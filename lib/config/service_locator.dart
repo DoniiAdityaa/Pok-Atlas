@@ -5,6 +5,8 @@ import 'package:get_it/get_it.dart';
 import 'package:pokeatlas/features/compare/cubit/compare_cubit.dart';
 import 'package:pokeatlas/repository/pokemon_detail/pokemon_detail_repository.dart';
 import 'package:pokeatlas/repository/pokemon_list/pokemon_list_repository.dart';
+import 'package:pokeatlas/repository/pokemon_type/pokemon_type_repository.dart';
+import 'package:pokeatlas/features/pokemon_type/cubit/pokemon_type_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/api/api_service.dart';
@@ -64,6 +66,13 @@ Future<void> setUpLocator() async {
     () => PokemonListRepository(api: serviceLocator.get<ApiService>()),
   );
 
+  serviceLocator.registerLazySingleton<PokemonTypeRepository>(
+    () => PokemonTypeRepository(
+      api: serviceLocator.get<ApiService>(),
+      prefs: serviceLocator.get<SharedPreferences>(),
+    ),
+  );
+
   serviceLocator.registerLazySingleton<PokemonDetailRepository>(
     () => PokemonDetailRepository(
       api: serviceLocator.get<ApiService>(),
@@ -88,6 +97,12 @@ Future<void> setUpLocator() async {
     () => CompareCubit(
       listRepository: serviceLocator.get<PokemonListRepository>(),
       detailRepository: serviceLocator.get<PokemonDetailRepository>(),
+    ),
+  );
+
+  serviceLocator.registerFactory<PokemonTypeCubit>(
+    () => PokemonTypeCubit(
+      repository: serviceLocator.get<PokemonTypeRepository>(),
     ),
   );
 }

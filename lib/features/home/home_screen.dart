@@ -8,8 +8,14 @@ import '../../config/service_locator.dart';
 import '../../data/api/api_service.dart';
 import '../../models/pokemon_detail_model.dart';
 import '../../models/pokemon_list_model.dart';
+import '../../ui/shared_widget/monstra_mascot.dart';
+import '../../ui/shared_widget/monstra_poses.dart';
 import '../../ui/color.dart';
+import '../../ui/motion/motion.dart';
+import '../../ui/shared_widget/app_header.dart';
 import '../../ui/shared_widget/app_messenger.dart';
+import '../../ui/shared_widget/pokemon_card.dart';
+import '../../ui/shared_widget/monstra_refresh.dart';
 import '../../ui/shared_widget/pokemon_empty_state.dart';
 import '../../ui/shared_widget/pokemon_search_bar.dart';
 import '../../ui/shared_widget/pokemon_type_filter_bar.dart';
@@ -17,6 +23,7 @@ import '../../ui/typography.dart';
 import '../compare/compare_screen.dart';
 import '../detail/detail_screen.dart';
 import '../generation/generation_screen.dart';
+import '../pokemon_type/cubit/pokemon_type_cubit.dart';
 import 'cubit/home_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -37,6 +44,10 @@ class HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late final ScrollController _scrollController;
+
+  /// ID kartu yang sudah pernah dianimasikan masuk. Kartu yang di-recycle oleh
+  /// SliverGrid saat scroll balik tidak dianimasikan ulang (biar tidak norak).
+  final Set<int> _revealedIds = {};
 
   // Random featured Pokémon state — fetched live from API
   PokemonDetailModel? _featuredPokemon;
@@ -87,13 +98,21 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   void _toggleFavorite(int id) {
+    final adding = !_favoriteIds.contains(id);
     setState(() {
-      if (_favoriteIds.contains(id)) {
-        _favoriteIds.remove(id);
-      } else {
+      if (adding) {
         _favoriteIds.add(id);
+      } else {
+        _favoriteIds.remove(id);
       }
     });
+    if (adding) {
+      MonstraToast.show(
+        context,
+        title: 'Disimpan ke Favorit!',
+        subtitle: 'Cek koleksimu di tab Favorit',
+      );
+    }
   }
 
   /// Animasi scroll kembali ke puncak halaman secara halus saat tab PokéDex ditekan ulang
@@ -140,19 +159,8 @@ class HomeScreenState extends State<HomeScreen> {
     return filtered.length > 60 ? filtered.sublist(0, 60) : filtered;
   }
 
-  /// Helper untuk menentukan generasi Pokémon berdasarkan ID Pokédex
-  String _getGenerationTag(int? id) {
-    if (id == null) return 'GEN I';
-    if (id <= 151) return 'GEN I';
-    if (id <= 251) return 'GEN II';
-    if (id <= 386) return 'GEN III';
-    if (id <= 493) return 'GEN IV';
-    if (id <= 649) return 'GEN V';
-    if (id <= 721) return 'GEN VI';
-    if (id <= 809) return 'GEN VII';
-    if (id <= 905) return 'GEN VIII';
-    return 'GEN IX';
-  }
+  /// Label generasi (GEN I – IX) — logika ada di shared [PokemonCard].
+  String _getGenerationTag(int? id) => PokemonCard.generationTagFor(id);
 
   // Surprise random Pokémon picker dari PokéAPI (Buka BottomSheet dengan Shimmer & Live Fetch)
   void _pickRandomPokemon() {
@@ -173,9 +181,7 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
-        child: RefreshIndicator(
-          color: primaryColor,
-          backgroundColor: bgLight,
+        child: MonstraRefresh(
           onRefresh: () => context.read<HomeCubit>().getPokemonList(),
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
@@ -193,11 +199,19 @@ class HomeScreenState extends State<HomeScreen> {
               slivers: [
                 // 1. Explorer Header
                 SliverToBoxAdapter(
-                  child: _buildHeader(),
+                  child: FadeSlideIn(
+                    offset: const Offset(0, -10),
+                    child: _buildHeader(),
+                  ),
                 ),
                 // 3. Featured Hero Card
                 SliverToBoxAdapter(
-                  child: _buildFeaturedCard(),
+                  child: FadeSlideIn(
+                    delay: AppMotion.staggerAt(1),
+                    offset: const Offset(0, 24),
+                    scaleFrom: 0.97,
+                    child: _buildFeaturedCard(),
+                  ),
                 ),
                 // 4. Blok (Evolution & Compare)
                 SliverToBoxAdapter(
@@ -206,11 +220,17 @@ class HomeScreenState extends State<HomeScreen> {
 
                 // 4. Element Type Filter Bar
                 SliverToBoxAdapter(
-                  child: _buildTypeFilterBar(),
+                  child: FadeSlideIn(
+                    delay: AppMotion.staggerAt(5),
+                    child: _buildTypeFilterBar(),
+                  ),
                 ),
 
                 SliverToBoxAdapter(
-                  child: _buildSearchBar(),
+                  child: FadeSlideIn(
+                    delay: AppMotion.staggerAt(6),
+                    child: _buildSearchBar(),
+                  ),
                 ),
 
                 // 5. Section Title: Pokémon List (Synced with Cubit State)
@@ -237,6 +257,8 @@ class HomeScreenState extends State<HomeScreen> {
                 // 6. 2-Column Pokémon Cards Grid / Shimmer / Error
                 BlocBuilder<HomeCubit, HomeState>(
                   builder: (context, state) {
+                    // Rebuild kartu saat tipe asli selesai dimuat
+                    context.watch<PokemonTypeCubit>();
                     if (state is HomeLoading) {
                       return _buildShimmerGrid();
                     } else if (state is HomeError) {
@@ -279,101 +301,28 @@ class HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 1. Sisi Kiri: Spacer penyeimbang (44px) agar judul PokéAtlas tetap presisi di tengah
+          // 1. Sisi Kiri: Spacer penyeimbang (44px) agar judul Monstra tetap presisi di tengah
           const SizedBox(width: 44, height: 44),
 
-          // 2. Tengah: Judul PokéAtlas Playful
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Poké',
-                      style: lBold.copyWith(
-                        fontSize: 22,
-                        letterSpacing: -0.5,
-                        color: bgDark,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Atlas',
-                      style: lBold.copyWith(
-                        fontSize: 22,
-                        letterSpacing: -0.5,
-                        color: primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          // 2. Tengah: Logo Monstra interaktif (ketuk = kaget + tips,
+          //    malam hari = ngantuk)
+          const MonstraHeaderLogo(height: 34),
 
-          // 3. Ikon Kanan: Surprise Pokémon Encounter (Pokéball Acak)
-          _buildHeaderCircleButton(
-            imageAsset: 'assets/images/icons/pokeball.png',
-            tooltip: 'Surprise Pokémon!',
-            hasBadgeDot: true, // Dot merah aksen Pokémon liar
-            onTap: _pickRandomPokemon,
+          // 3. Ikon Kanan: Surprise (Pokémon acak) — kapsul statis,
+          //    sama dengan tombol acak di sheet Compare.
+          SizedBox(
+            width: 44,
+            child: Center(
+              child: AppPillButton(
+                tooltip: 'Surprise Pokémon!',
+                iconSize: 18,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                onTap: _pickRandomPokemon,
+              ),
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Helper tombol lingkaran empuk di Header
-  Widget _buildHeaderCircleButton({
-    IconData? icon,
-    String? imageAsset,
-    required VoidCallback onTap,
-    String? tooltip,
-    bool hasBadgeDot = false,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        splashColor: primaryColor50,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: bgLight,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: borderNeutral.withValues(alpha: 0.8),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (imageAsset != null)
-                Image.asset(
-                  imageAsset,
-                  width: 22,
-                  height: 22,
-                  fit: BoxFit.contain,
-                )
-              else if (icon != null)
-                Icon(
-                  icon,
-                  size: 20,
-                  color: bgDark,
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -397,14 +346,41 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   /// Banner Pokémon of the Session — random, fetched live from API
+  /// Transisi halus antara shimmer → kartu, dan kartu ↔ tersembunyi saat search aktif.
   Widget _buildFeaturedCard() {
+    return AnimatedSize(
+      duration: AppMotion.medium,
+      curve: AppMotion.standard,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: AppMotion.medium,
+        switchInCurve: AppMotion.enter,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
+            child: child,
+          ),
+        ),
+        layoutBuilder: (current, previous) => Stack(
+          alignment: Alignment.topCenter,
+          children: [...previous, if (current != null) current],
+        ),
+        child: _buildFeaturedContent(),
+      ),
+    );
+  }
+
+  Widget _buildFeaturedContent() {
     if (_searchController.text.trim().isNotEmpty) {
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(key: ValueKey('featured_hidden'));
     }
 
     // Loading shimmer state
     if (_featuredLoading) {
       return Padding(
+        key: const ValueKey('featured_loading'),
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: Shimmer.fromColors(
           baseColor: Colors.grey.shade300,
@@ -421,7 +397,9 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     // No data / error state — silently hide
-    if (_featuredPokemon == null) return const SizedBox.shrink();
+    if (_featuredPokemon == null) {
+      return const SizedBox.shrink(key: ValueKey('featured_empty'));
+    }
 
     final pokemon = _featuredPokemon!;
     final types = pokemon.typeNames;
@@ -432,27 +410,29 @@ class HomeScreenState extends State<HomeScreen> {
     final imageUrl = pokemon.officialImageUrl;
 
     return Padding(
+      key: ValueKey('featured_${pokemon.id}'),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: InkWell(
+      child: Pressable(
         onTap: () => _navigateToDetail(pokemon.toListItem),
-        borderRadius: BorderRadius.circular(28),
+        pressedScale: 0.975,
+        semanticLabel: 'Featured Pokémon ${pokemon.capitalizedName}',
         child: Container(
           height: 190,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            // Vibrant elemental gradient from real type colors
+            // Indigo brand gradient, warna tipe hanya sebagai tint di sudut
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                primaryColor.withValues(alpha: 0.95),
+                jacarta700,
+                nightColor,
                 Color.alphaBlend(
-                  secondaryColor.withValues(alpha: 0.80),
-                  primaryColor,
+                  secondaryColor.withValues(alpha: 0.35),
+                  nightColor,
                 ),
-                secondaryColor,
               ],
-              stops: const [0.0, 0.55, 1.0],
+              stops: const [0.0, 0.6, 1.0],
             ),
             boxShadow: [
               BoxShadow(
@@ -466,54 +446,17 @@ class HomeScreenState extends State<HomeScreen> {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // 1. Large translucent Pokéball ring — bottom-right anchor
+              // 1. Siluet maskot Monstra transparan — pojok kanan bawah
               Positioned(
-                right: -50,
-                bottom: -55,
-                child: Container(
-                  width: 250,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      width: 22,
-                    ),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 75,
-                      height: 75,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.16),
-                          width: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 2. Diagonal shimmer sweep
-              Positioned(
-                left: -40,
-                top: -40,
-                child: Transform.rotate(
-                  angle: 0.55,
-                  child: Container(
-                    width: 200,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          Colors.white.withValues(alpha: 0.13),
-                          Colors.transparent,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(30),
+                right: -36,
+                bottom: -52,
+                child: Opacity(
+                  opacity: 0.12,
+                  child: Transform.rotate(
+                    angle: -0.12,
+                    child: const MonstraMascot(
+                      size: 230,
+                      showBackground: false,
                     ),
                   ),
                 ),
@@ -566,43 +509,52 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
 
                     // Pokédex ID + Name
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          pokemon.formattedId,
-                          style: xxsBold.copyWith(
-                            color: Colors.white.withValues(alpha: 0.70),
-                            letterSpacing: 1.5,
-                            fontSize: 11,
+                    FadeSlideIn(
+                      delay: AppMotion.staggerAt(2),
+                      offset: const Offset(-14, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pokemon.formattedId,
+                            style: xxsBold.copyWith(
+                              color: Colors.white.withValues(alpha: 0.70),
+                              letterSpacing: 1.5,
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          pokemon.capitalizedName,
-                          style: lBold.copyWith(
-                            fontSize: 28,
-                            color: Colors.white,
-                            letterSpacing: -0.8,
-                            height: 1.05,
+                          const SizedBox(height: 1),
+                          Text(
+                            pokemon.capitalizedName,
+                            style: lBold.copyWith(
+                              fontSize: 28,
+                              color: Colors.white,
+                              letterSpacing: -0.8,
+                              height: 1.05,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     // Real type chips from API
                     Row(
-                      children: types.map((type) {
-                        return _buildTypeBadge(
-                          type,
-                          isLightBackground: false,
-                          iconSize: 12,
-                          fontSize: 11,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 3.5,
+                      children: types.asMap().entries.map((entry) {
+                        final type = entry.value;
+                        return FadeSlideIn(
+                          delay: AppMotion.staggerAt(3 + entry.key),
+                          offset: const Offset(0, 8),
+                          child: _buildTypeBadge(
+                            type,
+                            isLightBackground: false,
+                            iconSize: 12,
+                            fontSize: 11,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3.5,
+                            ),
+                            margin: const EdgeInsets.only(right: 6),
                           ),
-                          margin: const EdgeInsets.only(right: 6),
                         );
                       }).toList(),
                     ),
@@ -610,27 +562,27 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // 5. Official artwork — pops from right
+              // 5. Official artwork — masuk dari kanan lalu melayang pelan
               Positioned(
                 right: 0,
                 bottom: -8,
                 top: 4,
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  width: 178,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => Center(
-                    child: SizedBox(
-                      width: 26,
-                      height: 26,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
+                child: FadeSlideIn(
+                  delay: AppMotion.staggerAt(2),
+                  duration: const Duration(milliseconds: 720),
+                  offset: const Offset(36, 6),
+                  scaleFrom: 0.88,
+                  child: Floating(
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 178,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) =>
+                          const Center(child: MonstraLoader(size: 44)),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.broken_image, color: Colors.white54),
                     ),
                   ),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.broken_image, color: Colors.white54),
                 ),
               ),
             ],
@@ -645,11 +597,14 @@ class HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-          child: Text(
-            'Poké Tools',
-            style: mdBold.copyWith(color: bgDark),
+        FadeSlideIn(
+          delay: AppMotion.staggerAt(2),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+            child: Text(
+              'Poké Tools',
+              style: mdBold.copyWith(color: bgDark),
+            ),
           ),
         ),
         Padding(
@@ -660,42 +615,50 @@ class HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildToolTwinCard(
-                      title: 'Evolution',
-                      subtitle: 'Branches & Forms',
-                      badgeText: 'DNA TREE',
-                      badgeIcon: Icons.alt_route_rounded,
-                      gradientColors: const [
-                        PokemonTypeColors.grass,
-                        PokemonTypeColors.ice,
-                      ],
-                      onTap: () {
-                        AppMessenger.showComingSoon(
-                          context,
-                          featureName: 'Evolution Explorer',
-                        );
-                      },
+                    child: FadeSlideIn(
+                      delay: AppMotion.staggerAt(3),
+                      offset: const Offset(-16, 12),
+                      child: _buildToolTwinCard(
+                        title: 'Evolution',
+                        subtitle: 'Branches & Forms',
+                        badgeText: 'DNA TREE',
+                        badgeIcon: Icons.alt_route_rounded,
+                        gradientColors: const [
+                          PokemonTypeColors.grass,
+                          PokemonTypeColors.ice,
+                        ],
+                        onTap: () {
+                          AppMessenger.showComingSoon(
+                            context,
+                            featureName: 'Evolution Explorer',
+                          );
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildToolTwinCard(
-                      title: 'Compare',
-                      subtitle: 'Stat Matchup',
-                      badgeText: 'VS ARENA',
-                      badgeIcon: Icons.bolt_rounded,
-                      gradientColors: const [
-                        PokemonTypeColors.dragon,
-                        PokemonTypeColors.fighting,
-                      ],
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CompareScreen(),
-                          ),
-                        );
-                      },
+                    child: FadeSlideIn(
+                      delay: AppMotion.staggerAt(3),
+                      offset: const Offset(16, 12),
+                      child: _buildToolTwinCard(
+                        title: 'Compare',
+                        subtitle: 'Stat Matchup',
+                        badgeText: 'VS ARENA',
+                        badgeIcon: Icons.bolt_rounded,
+                        gradientColors: const [
+                          PokemonTypeColors.dragon,
+                          PokemonTypeColors.fighting,
+                        ],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CompareScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],
@@ -704,7 +667,10 @@ class HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
 
               // 2.Kotak Horizontal Lebar Generation & Region Atlas
-              _buildGenerationHorizontalBanner(),
+              FadeSlideIn(
+                delay: AppMotion.staggerAt(4),
+                child: _buildGenerationHorizontalBanner(),
+              ),
             ],
           ),
         ),
@@ -721,119 +687,116 @@ class HomeScreenState extends State<HomeScreen> {
     required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 114,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: gradientColors,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: gradientColors.first.withValues(alpha: 0.28),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    return Pressable(
+      onTap: onTap,
+      semanticLabel: '$title — $subtitle',
+      child: Container(
+        height: 114,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              // Pokéball watermark di kanan bawah
-              Positioned(
-                right: -15,
-                bottom: -15,
-                child: Opacity(
-                  opacity: 0.14,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: bgLight,
-                    ),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors.first.withValues(alpha: 0.28),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Pokéball watermark di kanan bawah
+            Positioned(
+              right: -15,
+              bottom: -15,
+              child: Opacity(
+                opacity: 0.14,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: bgLight,
                   ),
                 ),
               ),
+            ),
 
-              // Ikon besar transparan melayang di kanan
-              Positioned(
-                right: 6,
-                bottom: 8,
-                child: Icon(
-                  badgeIcon,
-                  size: 44,
-                  color: bgLight.withValues(alpha: 0.22),
-                ),
+            // Ikon besar transparan melayang di kanan
+            Positioned(
+              right: 6,
+              bottom: 8,
+              child: Icon(
+                badgeIcon,
+                size: 44,
+                color: bgLight.withValues(alpha: 0.22),
               ),
+            ),
 
-              // Konten Teks & Badge
-              Padding(
-                padding: const EdgeInsets.all(13.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Badge Chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7.5,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: bgLight.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(badgeIcon, size: 10.5, color: black00),
-                          const SizedBox(width: 3.5),
-                          Text(
-                            badgeText,
-                            style: xxsBold.copyWith(
-                              fontSize: 9,
-                              color: black00,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
+            // Konten Teks & Badge
+            Padding(
+              padding: const EdgeInsets.all(13.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Badge Chip
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7.5,
+                      vertical: 3,
                     ),
-
-                    // Title & Subtitle
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    decoration: BoxDecoration(
+                      color: bgLight.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(badgeIcon, size: 10.5, color: black00),
+                        const SizedBox(width: 3.5),
                         Text(
-                          title,
-                          style: smBold.copyWith(
-                            fontSize: 15,
+                          badgeText,
+                          style: xxsBold.copyWith(
+                            fontSize: 9,
                             color: black00,
-                          ),
-                        ),
-                        const SizedBox(height: 1.5),
-                        Text(
-                          subtitle,
-                          style: xxsRegular.copyWith(
-                            fontSize: 10,
-                            color: black00.withValues(alpha: 0.85),
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  // Title & Subtitle
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: smBold.copyWith(
+                          fontSize: 15,
+                          color: black00,
+                        ),
+                      ),
+                      const SizedBox(height: 1.5),
+                      Text(
+                        subtitle,
+                        style: xxsRegular.copyWith(
+                          fontSize: 10,
+                          color: black00.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -841,139 +804,137 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// Banner horizontal lebar untuk Generation & Regions Atlas di baris bawah
   Widget _buildGenerationHorizontalBanner() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const GenerationScreen(),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 100,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                PokemonTypeColors.water,
-                PokemonTypeColors.dragon,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: PokemonTypeColors.water.withValues(alpha: 0.30),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-              ),
+    return Pressable(
+      pressedScale: 0.975,
+      semanticLabel: 'Generation Explorer',
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const GenerationScreen(),
+          ),
+        );
+      },
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              PokemonTypeColors.water,
+              PokemonTypeColors.dragon,
             ],
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              // Pokéball watermark kanan
-              Positioned(
-                right: -20,
-                bottom: -28,
-                child: Opacity(
-                  opacity: 0.12,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: bgLight,
-                    ),
+          boxShadow: [
+            BoxShadow(
+              color: PokemonTypeColors.water.withValues(alpha: 0.30),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Pokéball watermark kanan
+            Positioned(
+              right: -20,
+              bottom: -28,
+              child: Opacity(
+                opacity: 0.12,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: bgLight,
                   ),
                 ),
               ),
+            ),
 
-              // Ikon Globe transparan besar di kanan
-              Positioned(
-                right: 0,
-                bottom: -10,
-                top: 20,
-                child: Icon(
-                  Icons.public_rounded,
-                  size: 72,
-                  color: bgLight.withValues(alpha: 0.16),
-                ),
+            // Ikon Globe transparan besar di kanan
+            Positioned(
+              right: 0,
+              bottom: -10,
+              top: 20,
+              child: Icon(
+                Icons.public_rounded,
+                size: 72,
+                color: bgLight.withValues(alpha: 0.16),
               ),
+            ),
 
-              // Konten Banner
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 12.0),
-                child: Row(
-                  children: [
-                    // Kolom Kiri: Badge & Nama Fitur
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Badge Chip
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: bgLight.withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.public_rounded,
-                                    size: 10.5, color: black00),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'REGION ATLAS',
-                                  style: xxsBold.copyWith(
-                                    fontSize: 9,
-                                    color: black00,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                              ],
-                            ),
+            // Konten Banner
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              child: Row(
+                children: [
+                  // Kolom Kiri: Badge & Nama Fitur
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Badge Chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
                           ),
-
-                          // Judul & Keterangan Region
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          decoration: BoxDecoration(
+                            color: bgLight.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
+                              const Icon(Icons.public_rounded,
+                                  size: 10.5, color: black00),
+                              const SizedBox(width: 4),
                               Text(
-                                'Generation Explorer',
-                                style: smBold.copyWith(
-                                  fontSize: 15.5,
+                                'REGION ATLAS',
+                                style: xxsBold.copyWith(
+                                  fontSize: 9,
                                   color: black00,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              Text(
-                                'Kanto to Paldea • 9 Generations',
-                                style: xxsRegular.copyWith(
-                                  fontSize: 10.5,
-                                  color: black00.withValues(alpha: 0.85),
+                                  letterSpacing: 0.6,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+
+                        // Judul & Keterangan Region
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Generation Explorer',
+                              style: smBold.copyWith(
+                                fontSize: 15.5,
+                                color: black00,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            Text(
+                              'Kanto to Paldea • 9 Generations',
+                              style: xxsRegular.copyWith(
+                                fontSize: 10.5,
+                                color: black00.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -988,9 +949,13 @@ class HomeScreenState extends State<HomeScreen> {
       height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemSpacing: 8,
+      animateIn: true,
       onSelected: (typeName) {
         if (_selectedType == typeName) return;
-        setState(() => _selectedType = typeName);
+        setState(() {
+          _selectedType = typeName;
+          _revealedIds.clear(); // hasil filter baru masuk dengan stagger lagi
+        });
         context.read<HomeCubit>().filterByType(typeName);
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -1013,9 +978,24 @@ class HomeScreenState extends State<HomeScreen> {
           // Sisi Kiri: Judul & Badge Jumlah Pokémon
           Row(
             children: [
-              Text(
-                title,
-                style: lgBold.copyWith(color: bgDark),
+              AnimatedSwitcher(
+                duration: AppMotion.medium,
+                switchInCurve: AppMotion.enter,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.4),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Text(
+                  title,
+                  key: ValueKey<String>(title),
+                  style: lgBold.copyWith(color: bgDark),
+                ),
               ),
               const SizedBox(width: 8),
               Container(
@@ -1035,78 +1015,22 @@ class HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // Sisi Kanan: Mini Pill View Switcher (Grid 2 Kolom vs List 1 Kolom)
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: black100,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: borderNeutral.withValues(alpha: 0.6),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildViewToggleItem(
-                  icon: Icons.grid_view_rounded,
-                  tooltip: '2-Column Grid',
-                  isSelected: _isGridMode,
-                  onTap: () {
-                    if (!_isGridMode) setState(() => _isGridMode = true);
-                  },
-                ),
-                const SizedBox(width: 2),
-                _buildViewToggleItem(
-                  icon: Icons.view_agenda_rounded,
-                  tooltip: '1-Column Detailed List',
-                  isSelected: !_isGridMode,
-                  onTap: () {
-                    if (_isGridMode) setState(() => _isGridMode = false);
-                  },
-                ),
-              ],
-            ),
+          // Sisi Kanan: toggle Grid / List (shared)
+          PokemonViewToggle(
+            isGrid: _isGridMode,
+            onChanged: (grid) => _setViewMode(grid: grid),
           ),
         ],
       ),
     );
   }
 
-  /// Tombol icon di dalam mini pill switcher view mode
-  Widget _buildViewToggleItem({
-    required IconData icon,
-    required String tooltip,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(9),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? bgLight : Colors.transparent,
-          borderRadius: BorderRadius.circular(9),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: isSelected ? primaryColor : black400,
-        ),
-      ),
-    );
+  void _setViewMode({required bool grid}) {
+    if (_isGridMode == grid) return;
+    setState(() {
+      _isGridMode = grid;
+      _revealedIds.clear(); // layout baru → kartu masuk ulang dengan stagger
+    });
   }
 
   /// Shimmer loading skeleton saat pertama kali memuat Pokémon dari PokéAPI
@@ -1118,7 +1042,7 @@ class HomeScreenState extends State<HomeScreen> {
           crossAxisCount: 2,
           mainAxisSpacing: 14,
           crossAxisSpacing: 14,
-          childAspectRatio: 0.78,
+          childAspectRatio: 0.74,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -1199,59 +1123,72 @@ class HomeScreenState extends State<HomeScreen> {
   /// State error jika gagal koneksi ke PokéAPI dengan tombol retry
   Widget _buildErrorState(String message) {
     return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: errorColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+      child: FadeSlideIn(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+          child: Column(
+            children: [
+              // Maskot pusing: gagal memuat / offline
+              const MonstraDizzy(size: 76),
+              const SizedBox(height: 14),
+              Text(
+                'Failed to Load Pokémon',
+                style: mdBold.copyWith(color: bgDark),
               ),
-              child: const Icon(
-                Icons.cloud_off_rounded,
-                color: errorColor,
-                size: 32,
+              const SizedBox(height: 6),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: smRegular.copyWith(color: black500, fontSize: 13),
               ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Failed to Load Pokémon',
-              style: mdBold.copyWith(color: bgDark),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: smRegular.copyWith(color: black500, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                if (_selectedType == 'All') {
-                  context.read<HomeCubit>().getPokemonList();
-                } else {
-                  context.read<HomeCubit>().filterByType(_selectedType);
-                }
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (_selectedType == 'All') {
+                    context.read<HomeCubit>().getPokemonList();
+                  } else {
+                    context.read<HomeCubit>().filterByType(_selectedType);
+                  }
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Coba Lagi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  /// Membungkus kartu dengan entrance stagger — hanya saat pertama kali tampil.
+  Widget _revealCard({
+    required PokemonListItemModel pokemon,
+    required int index,
+    required Widget child,
+  }) {
+    final id = pokemon.id ?? -index - 1;
+    final isFirstReveal = _revealedIds.add(id);
+    return FadeSlideIn(
+      key: ValueKey('reveal_${_isGridMode}_$id'),
+      animate: isFirstReveal,
+      // Batch awal di-stagger berurutan; item hasil infinite-scroll cukup
+      // di-stagger per kolom agar terasa responsif.
+      delay: index < 8
+          ? AppMotion.staggerAt(index)
+          : AppMotion.stagger * (index % (_isGridMode ? 2 : 1)),
+      offset: Offset(0, _isGridMode ? 28 : 20),
+      scaleFrom: _isGridMode ? 0.94 : 0.98,
+      child: child,
     );
   }
 
@@ -1262,11 +1199,13 @@ class HomeScreenState extends State<HomeScreen> {
   }) {
     if (pokemons.isEmpty) {
       return SliverToBoxAdapter(
-        child: PokemonEmptyState(
-          emoji: '🔍',
-          title: 'No Pokémon Found',
-          subtitle: 'Try searching with a different name or ID.',
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
+        child: FadeSlideIn(
+          scaleFrom: 0.96,
+          child: PokemonEmptyState(
+            title: 'No Pokémon Found',
+            subtitle: 'Try searching with a different name or ID.',
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
+          ),
         ),
       );
     }
@@ -1281,12 +1220,16 @@ class HomeScreenState extends State<HomeScreen> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 14,
                 crossAxisSpacing: 14,
-                childAspectRatio: 0.78,
+                childAspectRatio: 0.74,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final pokemon = pokemons[index];
-                  return _buildPokemonCard(pokemon);
+                  return _revealCard(
+                    pokemon: pokemon,
+                    index: index,
+                    child: _buildPokemonCard(pokemon),
+                  );
                 },
                 childCount: pokemons.length,
               ),
@@ -1300,7 +1243,11 @@ class HomeScreenState extends State<HomeScreen> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final pokemon = pokemons[index];
-                return _buildPokemonListCard(pokemon);
+                return _revealCard(
+                  pokemon: pokemon,
+                  index: index,
+                  child: _buildPokemonListCard(pokemon),
+                );
               },
             ),
           ),
@@ -1312,14 +1259,7 @@ class HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: primaryColor,
-                      ),
-                    ),
+                    const MonstraLoader(size: 28),
                     const SizedBox(width: 12),
                     Text(
                       'Catching more Pokémon...',
@@ -1337,378 +1277,23 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Kartu 1 kolom (Horizontal Banner) dengan artwork besar di kanan
-  Widget _buildPokemonListCard(PokemonListItemModel pokemon) {
-    final typeColor = _getPokemonAccentColor(pokemon.id ?? 1);
-    final isFav = _favoriteIds.contains(pokemon.id ?? 0);
+  /// Kartu 1 kolom (panjang) — shared [PokemonCard]
+  Widget _buildPokemonListCard(PokemonListItemModel pokemon) =>
+      _buildSharedCard(pokemon, PokemonCardStyle.list);
 
-    return InkWell(
+  /// Kartu grid (kotak) — shared [PokemonCard]
+  Widget _buildPokemonCard(PokemonListItemModel pokemon) =>
+      _buildSharedCard(pokemon, PokemonCardStyle.grid);
+
+  Widget _buildSharedCard(
+      PokemonListItemModel pokemon, PokemonCardStyle style) {
+    return PokemonCard(
+      pokemon: pokemon,
+      style: style,
+      isFavorite: _favoriteIds.contains(pokemon.id ?? 0),
+      onFavoriteToggle:
+          pokemon.id == null ? null : () => _toggleFavorite(pokemon.id!),
       onTap: () => _navigateToDetail(pokemon),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: 118,
-        decoration: BoxDecoration(
-          color: bgLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: typeColor.withValues(alpha: 0.22),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: typeColor.withValues(alpha: 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Soft gradient accent from left to right
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      typeColor.withValues(alpha: 0.12),
-                      typeColor.withValues(alpha: 0.02),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Subtle Pokéball watermark motif behind sprite
-            Positioned(
-              right: -15,
-              bottom: -15,
-              child: Opacity(
-                opacity: 0.10,
-                child: Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: typeColor,
-                  ),
-                ),
-              ),
-            ),
-
-            // Content Layout
-            Row(
-              children: [
-                // Info sisi kiri (ID, Nama, National Dex tag)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              pokemon.formattedId,
-                              style: xxsBold.copyWith(
-                                fontSize: 11,
-                                color: black500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: typeColor.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'National Dex',
-                                style: xxsSemiBold.copyWith(
-                                  fontSize: 9.5,
-                                  color: typeColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Nama Pokémon
-                        Text(
-                          pokemon.capitalizedName,
-                          style: mdBold.copyWith(
-                            color: bgDark,
-                            fontSize: 17,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        Row(
-                          children: [
-                            Icon(Icons.catching_pokemon,
-                                size: 13, color: typeColor),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Tap to inspect entry',
-                              style: xxsRegular.copyWith(color: black500),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Artwork & Favorite Button di sisi kanan
-                SizedBox(
-                  width: 115,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Sprite Resmi PokéAPI
-                      Positioned(
-                        right: 8,
-                        bottom: 4,
-                        top: 4,
-                        child: Hero(
-                          tag: 'pokemon_${pokemon.id}',
-                          child: CachedNetworkImage(
-                            imageUrl: pokemon.imageUrl ?? '',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.contain,
-                            placeholder: (context, url) => const Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.catching_pokemon,
-                              size: 40,
-                              color: black400,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Floating Favorite Heart Button
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              if (pokemon.id != null) {
-                                _toggleFavorite(pokemon.id!);
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(14),
-                            child: Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: bgLight.withValues(alpha: 0.85),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                isFav ? Icons.favorite : Icons.favorite_border,
-                                size: 16,
-                                color: isFav ? errorColor : black400,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Kartu satuan Pokémon dengan palet warna dinamis sesuai tipe
-  Widget _buildPokemonCard(PokemonListItemModel pokemon) {
-    final typeColor = _getPokemonAccentColor(pokemon.id ?? 1);
-    final isFav = _favoriteIds.contains(pokemon.id ?? 0);
-
-    return InkWell(
-      onTap: () => _navigateToDetail(pokemon),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: typeColor.withValues(alpha: 0.22),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: typeColor.withValues(alpha: 0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Soft colored background tint for top section
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 110,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      typeColor.withValues(alpha: 0.18),
-                      typeColor.withValues(alpha: 0.03),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Card Content
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top Row: Number ID & Favorite Toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        pokemon.formattedId,
-                        style: xxsBold.copyWith(
-                          fontSize: 11,
-                          color: black500,
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () {
-                          if (pokemon.id != null) {
-                            _toggleFavorite(pokemon.id!);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(2.0),
-                          child: Icon(
-                            isFav ? Icons.favorite : Icons.favorite_border,
-                            size: 19,
-                            color: isFav ? errorColor : black400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Image Container
-                  Expanded(
-                    child: Center(
-                      child: Hero(
-                        tag: 'pokemon_${pokemon.id}',
-                        child: CachedNetworkImage(
-                          imageUrl: pokemon.imageUrl ?? '',
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) => Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: typeColor,
-                              ),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => const Icon(
-                            Icons.catching_pokemon,
-                            size: 36,
-                            color: black400,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Pokémon Name
-                  Text(
-                    pokemon.capitalizedName,
-                    style: smBold.copyWith(
-                      fontSize: 15,
-                      color: bgDark,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Pokédex Entry Tag
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: typeColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.catching_pokemon,
-                          size: 11,
-                          color: typeColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getGenerationTag(pokemon.id),
-                          style: xxsBold.copyWith(
-                            color: typeColor,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -2084,16 +1669,8 @@ class _SurprisePokemonBottomSheetState
               imageUrl: pokemon.imageUrl ?? '',
               height: 160,
               fit: BoxFit.contain,
-              placeholder: (context, url) => Center(
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: typeColor,
-                  ),
-                ),
-              ),
+              placeholder: (context, url) =>
+                  const Center(child: MonstraLoader(size: 52)),
               errorWidget: (context, url, error) => const Icon(
                 Icons.catching_pokemon,
                 size: 52,

@@ -1,9 +1,14 @@
 import 'dart:ui';
 
-/// Base color (PokéAtlas Design System)
-const Color primaryColor = Color(0xFF2563EB); // Royal Blue
-const Color primaryColor700 = Color(0xFF1D4ED8); // Darker Blue
-const Color primaryColor50 = Color(0xFFEFF6FF); // Light Blue tint
+/// Base color (Monstra Design System)
+/// Primary = indigo (palet Jacarta), selaras dengan logo maskot Monstra.
+const Color primaryColor = jacarta600; // Indigo #4845B5
+const Color primaryColor700 = jacarta800; // Indigo gelap #2B296C
+const Color primaryColor50 = jacarta50; // Indigo tint #F0F0F9
+
+/// Warna brand maskot
+const Color nightColor = jacarta900; // #1C1B46 — latar logo, header gelap
+const Color creamColor = Color(0xFFF3EEE6); // badan maskot, ilustrasi
 const Color secondaryColor = Color(0xFFFD5812);
 const Color errorColor = Color(0xFFFF4542);
 const Color successColor = Color(0xFF22C55E);
@@ -123,8 +128,8 @@ const Color textNeutralSecondary = Color(0xFF71717A);
 const Color textWhitePrimary = Color(0xFFFFFFFF);
 const Color textWhiteSecondary = Color(0xFFD4D4D8);
 const Color textDisabled = Color(0xFF9E9E9E);
-const Color textPrimary = Color(0xFF3DAFA5);
-const Color textPrimaryPressed = Color(0xFFA50F0F);
+const Color textPrimary = jacarta600;
+const Color textPrimaryPressed = jacarta800;
 const Color textSecondary = Color(0xFFFF530A);
 const Color textSecondaryPressed = Color(0xFFF03C06);
 const Color textDanger = Color(0xFFE83F3C);
@@ -155,8 +160,8 @@ const Color iconLightDisabled = Color(0xFF9E9E9E);
 const Color iconNeutralSecondary = Color(0xFF71717A);
 const Color iconWhite = Color(0xFFFFFFFF);
 const Color iconDisabled = Color(0xFFa1a1aa);
-const Color iconPrimary = Color(0xFF3DAFA5);
-const Color iconPrimaryPressed = Color(0xFF1F6B65);
+const Color iconPrimary = jacarta600;
+const Color iconPrimaryPressed = jacarta800;
 const Color iconSecondary = Color(0xFFFF530A);
 const Color iconSecondaryPressed = Color(0xFFF03C06);
 const Color iconDanger = Color(0xFFE83F3C);
@@ -186,28 +191,28 @@ const Color bgSurfaceNeutralDark = Color(0xFFEDEDED);
 const Color bgBlack = Color(0xFF18181B);
 const Color bgSurfaceNeutral = Color(0xFFF4F4F5);
 const Color bgSurfaceNeutral2 = Color(0xFFE4E4E7);
-const Color bgSurfacePrimary = Color(0xFFFFF1F1);
+const Color bgSurfacePrimary = jacarta50;
 const Color bgSurfaceSecondary = Color(0xFFFFF5ED);
 const Color bgSurfaceDanger = Color(0xFFFFECEC);
 const Color bgSurfaceSuccess = Color(0xFFFAFDF1);
 const Color bgSurfaceWarning = Color(0xFFFFFEF0);
 const Color bgSurfaceInfo = Color(0xFFF2F5FD);
 const Color bgHoverNeutral = Color(0xFFE4E4E7);
-const Color bgHoverPrimary = Color(0xFFCCD6E6);
+const Color bgHoverPrimary = jacarta100;
 const Color bgHoverDanger = Color(0xFFFEE6E2);
 const Color bgHoverSuccess = Color(0xFFDEF6D1);
 const Color bgHoverWarning = Color(0xFFFFF7C2);
 const Color bgHoverInfo = Color(0xFFD8F3FF);
 const Color bgFillNeutral = Color(0xFF71717A);
-const Color bgFillPrimary = Color(0xFF3DAFA5);
+const Color bgFillPrimary = jacarta600;
 const Color bgFillSecondary = Color(0xFFFF7B37);
 const Color bgFillDanger = Color(0xFFE83F3C);
 const Color bgFillSuccess = Color(0xFF8FC907);
 const Color bgFillWarning = Color(0xFFFFBC00);
 const Color bgFillInfo = Color(0xFF4176E3);
-const Color bgButtonPrimaryDefault = Color(0xFF3DAFA5);
-const Color bgButtonPrimaryHover = Color(0xFF2E8A82);
-const Color bgButtonPrimaryPressed = Color(0xFF1F6B65);
+const Color bgButtonPrimaryDefault = jacarta600;
+const Color bgButtonPrimaryHover = jacarta700;
+const Color bgButtonPrimaryPressed = jacarta800;
 const Color bgButtonInfoDefault = Color(0xFF4176E3);
 const Color bgButtonInfoHover = Color(0xFF3B6BCF);
 const Color bgButtonInfoPressed = Color(0xFF2E54A1);
@@ -242,7 +247,7 @@ const Color borderNeutralLight = Color(0x1A0A0A0A);
 const Color borderNeutralDark = Color(0x290A0A0A);
 const Color borderLight = Color(0xFFFFFFFF);
 const Color borderDark = Color(0xFF0A0A0A);
-const Color borderSurfacePrimary = Color(0xFFFFDFDF);
+const Color borderSurfacePrimary = jacarta100;
 const Color borderSurfaceSecondary = Color(0xFFFFE8D4);
 const Color borderSurfaceDanger = Color(0xFFFFC5C4);
 const Color borderSurfaceSuccess = Color(0xFFE1F4B2);
@@ -250,7 +255,7 @@ const Color borderSurfaceInfo = Color(0xFFC4D5F6);
 const Color borderSurfaceWarning = Color(0xFFFFFAC5);
 const Color borderTransparentDark = Color(0x0A0A0A0A);
 const Color borderTransparentLight = Color(0x1FFFFFFF);
-const Color borderPrimary = Color(0xFFCCD6E6);
+const Color borderPrimary = jacarta200;
 const Color borderSecondary = Color(0xFFFFE8D4);
 const Color borderDanger = Color(0xFFFEE6E2);
 const Color borderSuccess = Color(0xFFDEF6D1);
@@ -258,7 +263,7 @@ const Color borderWarning = Color(0xFFFFF7C2);
 const Color borderInfo = Color(0xFFD8F3FF);
 const Color borderDisabled = Color(0xFFD4D4D8);
 const Color borderFillNeutral = Color(0xFF52525B);
-const Color borderFillPrimary = Color(0xFF3DAFA5);
+const Color borderFillPrimary = jacarta600;
 const Color borderFillSecondary = Color(0xFFFF530A);
 const Color borderFillDanger = Color(0xFF9DDD08);
 const Color borderFillSuccess = Color(0xFF3E9020);
@@ -426,8 +431,23 @@ class PokemonTypeColors {
     150: ['Psychic'],
   };
 
-  /// Resolves Pokémon ID to default type names
+  /// Indeks tipe asli dari PokéAPI (diisi oleh PokemonTypeCubit lewat main.dart).
+  static Map<int, List<String>> _liveTypes = const {};
+
+  /// Pasang indeks tipe asli. Setelah ini [getTypesById] & [getColorById]
+  /// mengembalikan data yang benar untuk semua Pokémon.
+  static void applyTypeIndex(Map<int, List<String>> index) {
+    _liveTypes = index;
+  }
+
+  /// Apakah tipe asli untuk [id] sudah tersedia (bukan tebakan).
+  static bool hasRealTypes(int? id) =>
+      id != null && (_liveTypes.containsKey(id) || knownTypes.containsKey(id));
+
+  /// Resolves Pokémon ID to type names (asli jika indeks sudah dimuat)
   static List<String> getTypesById(int? id) {
+    final live = id == null ? null : _liveTypes[id];
+    if (live != null && live.isNotEmpty) return live;
     if (id != null && knownTypes.containsKey(id)) {
       return knownTypes[id]!;
     }
@@ -450,6 +470,8 @@ class PokemonTypeColors {
   /// Resolves Pokémon ID to its official or harmonious accent color
   static Color getColorById(int? id) {
     if (id == null) return normal;
+    final live = _liveTypes[id];
+    if (live != null && live.isNotEmpty) return getColor(live.first);
     if (knownTypeColors.containsKey(id)) {
       return knownTypeColors[id]!;
     }
