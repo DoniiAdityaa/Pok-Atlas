@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warna layar pertama sebelum Flutter jalan, sama dengan atas splash (primaryColor50) -->
+    <color name="splash_background">#F0F0F9</color>
+    <!-- Latar ikon adaptif Android (Night) -->
+    <color name="ic_launcher_background">#1C1B46</color>
+</resources>

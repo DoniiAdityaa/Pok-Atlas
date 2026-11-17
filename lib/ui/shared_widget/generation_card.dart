@@ -1,9 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../ui/color.dart';
-import '../../../ui/typography.dart';
-import '../model/generation_model.dart';
+import '../color.dart';
+import '../motion/motion.dart';
+import '../typography.dart';
+import '../../features/generation/model/generation_model.dart';
 
 /// Shared Widget untuk Kartu Generasi Pokémon.
 ///
@@ -17,6 +18,9 @@ class GenerationCard extends StatelessWidget {
   final double? height;
   final EdgeInsetsGeometry margin;
 
+  /// Artwork trio starter melayang pelan (dipakai di banner Region Detail).
+  final bool floatArtwork;
+
   const GenerationCard({
     super.key,
     required this.generation,
@@ -24,6 +28,7 @@ class GenerationCard extends StatelessWidget {
     this.showExploreButton = true,
     this.height = 198,
     this.margin = EdgeInsets.zero,
+    this.floatArtwork = false,
   });
 
   @override
@@ -63,7 +68,7 @@ class GenerationCard extends StatelessWidget {
             child: Text(
               gen.romanNumeral,
               style: TextStyle(
-                fontFamily: 'poppins',
+                fontFamily: 'Poppins',
                 fontSize: 160,
                 fontWeight: FontWeight.w900,
                 color: gen.accentColor.withValues(alpha: 0.08),
@@ -241,12 +246,14 @@ class GenerationCard extends StatelessWidget {
                       Expanded(
                         child: Container(
                           alignment: Alignment.centerRight,
-                          child: Image.asset(
-                            gen.groupArtworkAsset,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildFallbackStarterStack(gen);
-                            },
+                          child: _maybeFloat(
+                            Image.asset(
+                              gen.groupArtworkAsset,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildFallbackStarterStack(gen);
+                              },
+                            ),
                           ),
                         ),
                       ),
@@ -299,21 +306,24 @@ class GenerationCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap!();
-          },
-          borderRadius: BorderRadius.circular(24),
-          child: cardContent,
-        ),
+      return Pressable(
+        haptic: false,
+        pressedScale: 0.975,
+        semanticLabel:
+            'Explore ${gen.regionName}, Generation ${gen.romanNumeral}',
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap!();
+        },
+        child: cardContent,
       );
     }
 
     return cardContent;
   }
+
+  Widget _maybeFloat(Widget child) =>
+      floatArtwork ? Floating(amplitude: 4, child: child) : child;
 
   Widget _buildFallbackStarterStack(GenerationModel gen) {
     return SizedBox(

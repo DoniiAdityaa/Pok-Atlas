@@ -52,3 +52,6 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+
+# Android build output
+/android/build/

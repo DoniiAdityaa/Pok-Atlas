@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../color.dart';
 import '../typography.dart';
+import 'monstra_mascot.dart';
 
 /// Reusable empty/no-result state untuk PokéAtlas.
 /// Digunakan di HomeScreen, RegionDetailScreen, CompareScreen, dll.
 class PokemonEmptyState extends StatelessWidget {
-  /// Emoji besar di atas (default: 🔍)
-  final String emoji;
+  /// Emoji opsional. Null (default) = maskot Monstra yang celingukan.
+  final String? emoji;
 
   /// Judul utama (default: 'No Pokémon Found')
   final String title;
@@ -25,7 +26,7 @@ class PokemonEmptyState extends StatelessWidget {
 
   const PokemonEmptyState({
     super.key,
-    this.emoji = '🔍',
+    this.emoji,
     this.title = 'No Pokémon Found',
     this.subtitle = 'Try adjusting your search or type filter.',
     this.resetLabel,
@@ -41,21 +42,21 @@ class PokemonEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon circle
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: black100,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 34),
+            // Maskot Monstra (atau emoji kustom bila diberikan)
+            if (emoji == null)
+              const MonstraConfused(size: 72)
+            else
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: black100,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(emoji!, style: const TextStyle(fontSize: 34)),
                 ),
               ),
-            ),
             const SizedBox(height: 16),
 
             // Title
@@ -106,4 +107,3 @@ class PokemonEmptyState extends StatelessWidget {
     );
   }
 }
-

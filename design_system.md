@@ -24,9 +24,11 @@ Aplikasi **PokéAtlas** tidak menggunakan warna merah Pokéball di seluruh halam
 
 | Token | Hex Code | Visual Sample | Penggunaan |
 | :--- | :--- | :--- | :--- |
-| **Primary** | `#2563EB` | ![#2563EB](https://via.placeholder.com/15/2563EB/000000?text=+) Royal Blue | Warna primer brand, tombol utama, tab aktif, link, progress bar. |
-| **Primary Dark** | `#1D4ED8` | ![#1D4ED8](https://via.placeholder.com/15/1D4ED8/000000?text=+) Blue 700 | State pressed/hover tombol, badge border. |
-| **Primary Tint** | `#EFF6FF` | ![#EFF6FF](https://via.placeholder.com/15/EFF6FF/000000?text=+) Blue 50 | Background badge, highlight container, subtle aura splash. |
+| **Primary** | `#4845B5` | ![#4845B5](https://via.placeholder.com/15/4845B5/000000?text=+) Indigo (jacarta600) | Warna primer brand, tombol utama, tab aktif, link, progress bar. |
+| **Primary Dark** | `#2B296C` | ![#2B296C](https://via.placeholder.com/15/2B296C/000000?text=+) Indigo 800 (jacarta800) | State pressed/hover tombol, badge border. |
+| **Primary Tint** | `#F0F0F9` | ![#F0F0F9](https://via.placeholder.com/15/F0F0F9/000000?text=+) Indigo 50 (jacarta50) | Background badge, highlight container, subtle aura splash. |
+| **Night** | `#1C1B46` | ![#1C1B46](https://via.placeholder.com/15/1C1B46/000000?text=+) jacarta900 | Latar logo maskot, header/hero gelap. |
+| **Cream** | `#F3EEE6` | ![#F3EEE6](https://via.placeholder.com/15/F3EEE6/000000?text=+) Cream | Badan maskot Monstra, ilustrasi. |
 | **Background** | `#F8FAFC` | ![#F8FAFC](https://via.placeholder.com/15/F8FAFC/000000?text=+) Slate 50 | Warna latar belakang seluruh layar aplikasi. |
 | **Surface / Card** | `#FFFFFF` | ![#FFFFFF](https://via.placeholder.com/15/FFFFFF/000000?text=+) Pure White | Warna kartu Pokémon, bottom sheet, modal dialog. |
 | **Text Primary** | `#0F172A` | ![#0F172A](https://via.placeholder.com/15/0F172A/000000?text=+) Slate 900 | Judul utama, nama Pokémon, angka stats penting. |

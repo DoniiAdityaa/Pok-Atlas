@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../ui/shared_widget/monstra_poses.dart';
+import '../../ui/shared_widget/monstra_mascot.dart';
 import '../../ui/color.dart';
 import '../../ui/typography.dart';
 import 'cubit/detail_cubit.dart';
@@ -352,11 +354,9 @@ class _DetailScreenState extends State<DetailScreen>
                                       height: 215,
                                       width: 215,
                                       fit: BoxFit.contain,
-                                      placeholder: (context, url) => Center(
-                                        child: CircularProgressIndicator(
-                                          color: primaryColor,
-                                          strokeWidth: 2,
-                                        ),
+                                      placeholder: (context, url) =>
+                                          const Center(
+                                        child: MonstraLoader(size: 60),
                                       ),
                                       errorWidget: (context, url, error) =>
                                           const Icon(Icons.broken_image_rounded,
@@ -573,17 +573,23 @@ class _DetailScreenState extends State<DetailScreen>
             iconColor: _isFavorite ? const Color(0xFFFF4757) : Colors.white,
             onTap: () {
               setState(() => _isFavorite = !_isFavorite);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    _isFavorite
-                        ? '${_currentPokemon.name} added to Favorites!'
-                        : '${_currentPokemon.name} removed from Favorites!',
+              if (_isFavorite) {
+                MonstraToast.show(
+                  context,
+                  title: 'Disimpan ke Favorit!',
+                  subtitle: '${_currentPokemon.name} sekarang ada di Favorit',
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${_currentPokemon.name} removed from Favorites!',
+                    ),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
                   ),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+                );
+              }
             },
           ),
         ],

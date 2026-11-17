@@ -7,7 +7,7 @@ class AppTheme {
   // Settings Light Theme
   static ThemeData get light {
     return ThemeData(
-      fontFamily: "poppins",
+      fontFamily: "Poppins",
       useMaterial3: true,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
@@ -53,7 +53,7 @@ class AppTheme {
 
   static ThemeData get dark {
     return ThemeData(
-      fontFamily: "poppins",
+      fontFamily: "Poppins",
       useMaterial3: true,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,

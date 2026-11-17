@@ -1,7 +1,7 @@
 import 'package:pokeatlas/config/env/env.dart';
 
 /// App Config
-const String appName = "PokéAtlas";
+const String appName = "Monstra";
 const String appVersion = "1.0.0";
 
 /// Network Config
